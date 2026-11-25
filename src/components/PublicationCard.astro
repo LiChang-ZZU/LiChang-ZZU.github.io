@@ -9,11 +9,11 @@ const ownNames = new Set([site.name, site.nameEn].filter(Boolean));
 const links = [
   ['DOI', pub.data.doi], ['PDF', pub.data.pdf], ['Code', pub.data.code], ['Video', pub.data.video], ['Project', pub.data.project]
 ].filter(([,url]) => url);
-const typeLabels: Record<string, [string, string]> = {
+const typeLabels = {
   journal: ['期刊', 'Journal'], conference: ['会议', 'Conference'], preprint: ['预印本', 'Preprint'],
   book: ['专著', 'Book'], chapter: ['章节', 'Chapter'], other: ['其他', 'Other']
-};
-const typeLabel = (typeLabels[pub.data.type] ?? typeLabels.other)[locale === 'zh' ? 0 : 1];
+} as const satisfies Record<string, readonly [string, string]>;
+const typeLabel = typeLabels[pub.data.type][locale === 'zh' ? 0 : 1];
 const venueText = `${pub.data.venue}${pub.data.volume ? `, ${pub.data.volume}` : ''}${pub.data.pages ? `, ${pub.data.pages}` : ''}`;
 ---
 <article class="publication" data-type={pub.data.type} data-reveal="fade-up">
