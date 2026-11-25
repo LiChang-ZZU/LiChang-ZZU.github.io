@@ -42,7 +42,7 @@ const introduction = locale === 'zh'
     <div class="interest-list container">{interests.map((interest,index)=><div data-reveal="fade-up"><span>{String(index+1).padStart(2,'0')}</span><h3>{interest}</h3></div>)}</div>
   </section>}
   {projects.length>0 && <section class="section featured"><div class="container"><SectionHeader eyebrow={locale==='zh'?'研究':'Research'} title={locale==='zh'?'重点研究':'Featured research'} link={getLocalizedPath(locale,'/projects/')} linkLabel={locale==='zh'?'全部项目':'All projects'} /><div class="project-flow">{projects.map((project,index)=><ProjectCard {project} {locale} {index} />)}</div></div></section>}
-  {publications.length>0 && <section class="section"><div class="container"><SectionHeader eyebrow={locale==='zh'?'成果':'Output'} title={locale==='zh'?'代表论文':'Selected publications'} link={getLocalizedPath(locale,'/publications/')} linkLabel={locale==='zh'?'全部论文':'All publications'} /><div class="pub-grid">{publications.map((publication)=><PublicationCard {publication} {locale} />)}</div></div></section>}
+  {publications.length>0 && <section class="section"><div class="container"><SectionHeader eyebrow={locale==='zh'?'成果':'Output'} title={locale==='zh'?'代表论文':'Selected publications'} link={getLocalizedPath(locale,'/publications/')} linkLabel={locale==='zh'?'全部论文':'All publications'} /><div class="pub-rail-wrap"><div class="rail-nav" data-pagefind-ignore><button type="button" data-rail-prev aria-label={locale==='zh'?'向左滑动':'Scroll left'}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><button type="button" data-rail-next aria-label={locale==='zh'?'向右滑动':'Scroll right'}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button></div><div class="pub-rail" data-rail tabindex="0" role="region" aria-label={locale==='zh'?'代表论文':'Selected publications'}>{publications.map((publication)=><PublicationCard {publication} {locale} />)}</div></div></div></section>}
   {news.length>0 && <section class="section soft"><div class="container narrow-shift"><SectionHeader eyebrow={locale==='zh'?'动态':'Updates'} title={locale==='zh'?'最新动态':'Latest news'} link={getLocalizedPath(locale,'/news/')} linkLabel={locale==='zh'?'全部动态':'All news'} /><NewsList items={news} {locale} /></div></section>}
   {posts.length>0 && <section class="section"><div class="container"><SectionHeader eyebrow={locale==='zh'?'写作':'Writing'} title={locale==='zh'?'最近写作':'Latest writing'} link={getLocalizedPath(locale,'/blog/')} linkLabel={locale==='zh'?'全部文章':'All writing'} /><div class="blog-grid">{posts.map((post)=><BlogCard {post} {locale} />)}</div></div></section>}
   <section class="contact-band section"><div class="container"><p class="eyebrow">{locale==='zh'?'联系':'Contact'}</p><h2>{locale==='zh'?'让严谨的想法，走向更远。':'Let rigorous ideas travel further.'}</h2><a class="button secondary" href={getLocalizedPath(locale,'/contact/')}>{locale==='zh'?'联系方式':'Get in touch'}</a></div></section>
@@ -51,4 +51,39 @@ const introduction = locale === 'zh'
 <style>
   .statement{background:var(--color-surface)}.statement-grid{display:grid;grid-template-columns:10rem 1fr;gap:2rem}.statement-text{max-width:32ch;margin:0;font-size:clamp(2rem,4.2vw,4.5rem);font-weight:620;line-height:1.12;letter-spacing:-.045em}.statement-grid>.text-link{grid-column:2}.interests{padding-bottom:0}.interest-list>div{display:grid;grid-template-columns:5rem 1fr;align-items:baseline;padding:1.3rem 0;border-top:1px solid var(--color-line)}.interest-list span{color:var(--color-faint);font-size:var(--text-xs)}.interest-list h3{margin:0;font-size:clamp(1.4rem,3vw,2.7rem);font-weight:560;letter-spacing:-.035em}.featured{background:var(--color-surface)}.project-flow{position:relative}.soft{background:var(--color-accent-soft)}.narrow-shift{display:grid;grid-template-columns:minmax(14rem,.4fr) 1fr;gap:clamp(2rem,7vw,7rem)}.narrow-shift :global(.section-header){display:block}.blog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem}.contact-band h2{max-width:12ch;margin:.5rem 0 2rem;font-size:clamp(2.5rem,6vw,6.5rem);line-height:.98;letter-spacing:-.06em}
   @media(max-width:760px){.statement-grid,.narrow-shift{grid-template-columns:1fr}.statement-grid>.text-link{grid-column:1}.blog-grid{grid-template-columns:1fr}.interest-list>div{grid-template-columns:3rem 1fr}}
+  .pub-rail-wrap{position:relative}
+  .rail-nav{display:flex;justify-content:flex-end;gap:.5rem;margin-bottom:1rem}
+  .rail-nav button{display:inline-flex;align-items:center;justify-content:center;width:2.5rem;height:2.5rem;border:1px solid var(--color-line);border-radius:50%;background:var(--color-surface);color:var(--color-text);cursor:pointer;transition:opacity var(--transition-fast),border-color var(--transition-fast)}
+  .rail-nav button:hover:not(:disabled){border-color:var(--color-accent)}
+  .rail-nav button:disabled{opacity:.3;cursor:default}
+  .pub-rail-wrap.is-static .rail-nav{display:none}
+  .pub-rail{display:flex;gap:1.6rem;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;padding-bottom:.6rem;scrollbar-width:none}
+  .pub-rail::-webkit-scrollbar{display:none}
+  .pub-rail:focus-visible{outline:2px solid var(--color-accent);outline-offset:6px;border-radius:var(--radius-sm)}
+  .pub-rail>:global(.publication){flex:0 0 min(21rem,78vw);scroll-snap-align:start}
+  @media(max-width:760px){.rail-nav{display:none}}
 </style>
+<script>
+  const setupRails = () => {
+    document.querySelectorAll<HTMLElement>('[data-rail]').forEach((rail) => {
+      const wrap = rail.parentElement;
+      const prev = wrap?.querySelector<HTMLButtonElement>('[data-rail-prev]');
+      const next = wrap?.querySelector<HTMLButtonElement>('[data-rail-next]');
+      if (!wrap || !prev || !next || rail.dataset.ready) return;
+      rail.dataset.ready = 'true';
+      const step = () => Math.max(rail.clientWidth * 0.8, 280);
+      const sync = () => {
+        const max = rail.scrollWidth - rail.clientWidth - 1;
+        prev.disabled = rail.scrollLeft <= 0;
+        next.disabled = rail.scrollLeft >= max;
+        wrap.classList.toggle('is-static', max <= 0);
+      };
+      prev.addEventListener('click', () => rail.scrollBy({ left: -step(), behavior: 'smooth' }));
+      next.addEventListener('click', () => rail.scrollBy({ left: step(), behavior: 'smooth' }));
+      rail.addEventListener('scroll', sync, { passive: true });
+      addEventListener('resize', sync);
+      sync();
+    });
+  };
+  setupRails(); document.addEventListener('astro:after-swap', setupRails);
+</script>
