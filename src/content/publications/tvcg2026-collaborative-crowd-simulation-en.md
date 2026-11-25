@@ -1,7 +1,14 @@
 ---
 title: Collaborative Small and Large Models for Crowd Simulation With Incomplete Trajectory Data
-slug: tvcg2026-collaborative-crowd-simulation-en
-authors: [Zheng Wang, Chang Li, Hua Wang, Dong Chen, Shuo He, Yingcai Wu, Mingliang Xu]
+slug: tvcg2026-collaborative-crowd-simulation
+authors:
+  - Zheng Wang
+  - Chang Li
+  - Hua Wang
+  - Dong Chen
+  - Shuo He
+  - Yingcai Wu
+  - Mingliang Xu
 venue: IEEE Transactions on Visualization and Computer Graphics
 year: 2026
 volume: "32"
@@ -25,11 +32,14 @@ bibtex: |-
     doi={10.1109/TVCG.2025.3649986}
   }
 award: ""
-abstract: Crowd simulation plays a crucial role in various domains, including entertainment, urban planning, and safety assessment. Data-driven methods offer significant advantages in simulating natural and diverse crowd behaviors, enabling highly realistic simulations. However, existing methods often face challenges due to incomplete trajectory data and limited generalization to unfamiliar scenarios. To address these limitations, we propose a novel crowd simulation framework based on the collaboration of a small model and a large model. Inspired by the dual-process decision-making mechanism in cognitive psychology, this framework enables efficient handling of familiar scenarios while leveraging the reasoning capabilities of large models in complex or unfamiliar environments. The small model, responsible for generating fast and reactive behaviors, is trained on real-world incomplete trajectory data to learn movement patterns. The large model, which performs simulation correction to refine failed behaviors, leverages past successful and failed experiences to enhance behavior generation in complex scenarios. Experimental results demonstrate that our framework significantly improves simulation accuracy in the presence of missing trajectory segments and enhances cross-scene generalization.
+abstract: Crowd simulation plays a critical role in numerous fields, including entertainment, urban planning, and safety assessment. Data-driven methods can learn features directly from real-world crowd trajectory data to simulate diverse behaviors, offering significant advantages in achieving natural and realistic crowd simulation. However, existing methods often face challenges due to incomplete trajectory data and limited generalization capability to unfamiliar scenes. To address these limitations, we propose a novel crowd simulation framework based on the collaboration of small and large models. Inspired by the dual-process decision-making mechanism in cognitive psychology, this framework can both efficiently handle familiar scenes and fully leverage the reasoning capability of large models in complex or unfamiliar environments. Specifically, the small model is responsible for generating fast, reactive behaviors and is trained on real-world incomplete trajectory data to learn motion patterns; the large model performs simulation correction to rectify failed behaviors, drawing on past successful and failed experiences to enhance behavior generation in complex scenes. Experimental results show that the framework significantly improves simulation accuracy in the presence of missing trajectory segments and enhances cross-scene generalization capability.
 thumbnail: /uploads/tvcg2026-collaborative-crowd-teaser.png
 type: journal
 featured: true
 locale: en
 translationKey: tvcg2026-collaborative-crowd-simulation
 draft: false
+translationGenerated: true
+translationModel: deepseek-v4-flash
+translationSource: src/content/publications/tvcg2026-collaborative-crowd-simulation-zh.md
 ---

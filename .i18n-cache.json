@@ -20,6 +20,16 @@
       "hash": "6771dbbf70708bcedc1a47be84012357bcf0b6e28d7c9d66d0ba4d7ee3aafee6",
       "targetPath": "src/content/pages/en-research.md",
       "generated": true
+    },
+    "src/content/publications/tvcg2026-collaborative-crowd-simulation-zh.md": {
+      "hash": "a38eb82c2c15347c6f79b1974712e50c1a7cae8f2c0d63076b0b317956c8eab9",
+      "targetPath": "src/content/publications/tvcg2026-collaborative-crowd-simulation-en.md",
+      "generated": true
+    },
+    "src/content/news/tvcg2026-crowd-simulation-zh.md": {
+      "hash": "b9034c3dea6e095a7f9821b32fbd15ad71ed2f12518faf20789a2442872b2318",
+      "targetPath": "src/content/news/auto-en-tvcg2026-crowd-simulation-zh.md",
+      "generated": true
     }
   }
 }
