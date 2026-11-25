@@ -16,8 +16,11 @@ const blog = defineCollection({
   })
 });
 
+// frontmatter 的 slug 会被自动翻译脚本按原文复制，中英文条目会撞 ID 而互相覆盖；改用文件路径作为 ID。
+const pathId = ({ entry }: { entry: string }) => entry.replace(/\.(md|mdx)$/i, '');
+
 const publications = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/publications' }),
+  loader: glob({ pattern: '**/*.md', base: './src/content/publications', generateId: pathId }),
   schema: z.object({
     title: z.string(), slug: z.string(), authors: z.array(z.string()), venue: z.string().default(''), year: z.number().int(),
     volume: z.string().default(''), issue: z.string().default(''), pages: z.string().default(''), doi: optionalUrl, pdf: optionalUrl,
@@ -38,7 +41,7 @@ const projects = defineCollection({
 });
 
 const news = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/news' }),
+  loader: glob({ pattern: '**/*.md', base: './src/content/news', generateId: pathId }),
   schema: z.object({
     title: z.string(), slug: z.string(), date: z.coerce.date(), description: z.string(), link: optionalUrl,
     type: z.enum(['publication','conference','project','visit','personal','other']).default('other'),

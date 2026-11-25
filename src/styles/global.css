@@ -60,6 +60,7 @@ button { color: inherit; }
 .empty-state { padding: var(--space-7); border-block: 1px solid var(--color-line); color: var(--color-muted); text-align: center; }
 .chip { display: inline-flex; padding: .28rem .65rem; border: 1px solid var(--color-line); border-radius: var(--radius-pill); color: var(--color-muted); font-size: var(--text-xs); text-decoration: none; }
 .meta { color: var(--color-muted); font-size: var(--text-sm); }
+.pub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: 1.15rem; align-items: stretch; }
 
 .prose { font-family: var(--font-serif); font-size: clamp(1.05rem, 1rem + .22vw, 1.18rem); line-height: 1.88; }
 .prose > * { max-width: 100%; }
