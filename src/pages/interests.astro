@@ -1,8 +1,18 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import InterestGallery from '@/components/InterestGallery.astro';
+import WritingList from '@/components/WritingList.astro';
 ---
-<BaseLayout title="兴趣" description="摄影作品与日常观察。" locale="zh">
-  <header class="page-head"><div class="container"><p class="eyebrow">兴趣</p><h1>摄影</h1><p>用镜头记录光线、城市与日常里容易被忽略的细节。</p></div></header>
-  <section class="section"><div class="container"><InterestGallery locale="zh" /></div></section>
+<BaseLayout title="兴趣" description="摄影作品与随笔。" locale="zh">
+  <header class="page-head"><div class="container"><p class="eyebrow" data-reveal="fade">兴趣</p><h1 data-reveal="fade-up">镜头与文字</h1><p data-reveal="fade-up" style="--stagger:1">摄影记录光线与日常，文字整理思考的痕迹。</p></div></header>
+  <section class="section" id="photography"><div class="container">
+    <div class="row-head" data-reveal="fade"><div><p class="eyebrow">摄影</p><h2>摄影作品</h2></div></div>
+    <InterestGallery locale="zh" />
+  </div></section>
+  <WritingList locale="zh" />
 </BaseLayout>
+<style>
+  .row-head{margin-bottom:1.6rem}
+  .row-head h2{margin:0;font-size:var(--text-2xl);letter-spacing:-.045em;line-height:1.05}
+  .row-head .eyebrow{margin-bottom:.7rem}
+</style>

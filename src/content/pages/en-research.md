@@ -10,12 +10,17 @@ translationSource: src/content/pages/zh-research.md
 ---
 ## Research agenda
 
-Explain your research agenda here, rather than merely listing keywords. A good research page states what the question is, why it is worth studying, what methods you use, and how it relates to existing work.
+I work on a concrete question: how can large crowds move realistically in virtual environments, fast enough to be practical, and credibly enough to be trusted?
+
+Real-world crowd trajectories are often sparse and incomplete. My work combines small models for local interaction with large models for semantics and common sense, reconstructing coherent and plausible collective motion from incomplete data.
 
 ## Current directions
 
-Update research directions centrally in the content backend. Specific projects and papers will be displayed automatically from separate content collections, making ongoing maintenance easier.
+- Crowd reconstruction and completion from incomplete trajectories
+- Behaviour generation through collaboration between small and large models
+- Reinforcement-learning-driven agent decision-making
+- Real-time rendering and trustworthy presentation of simulation results
 
 ## Methods and open practices
 
-You can describe your commonly used methods, data, and reproducibility principles here, and link to public code, data, or preregistration materials.
+Built on public datasets and consistent evaluation metrics, the work aims to stay reproducible: code, experiment configurations, and results are released alongside each paper.

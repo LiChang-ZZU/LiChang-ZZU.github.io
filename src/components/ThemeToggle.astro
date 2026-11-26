@@ -19,10 +19,21 @@ const { locale } = Astro.props;
       // 刷新/从往返缓存恢复时，确保页面主题与已保存的偏好一致
       const sync = () => { const theme = storedTheme(); if (theme) root.dataset.theme = theme; };
       sync(); addEventListener('pageshow', sync);
-      const apply = (theme: 'light' | 'dark') => {
+      const commit = (theme: 'light' | 'dark') => {
         root.dataset.theme = theme;
         try { localStorage.setItem('theme', theme); } catch {}
         document.dispatchEvent(new CustomEvent('themechange', { detail: theme }));
+      };
+      const apply = (theme: 'light' | 'dark') => {
+        // 支持时用 View Transition 做整页交叉淡化，否则短暂启用颜色过渡作为兜底
+        const smooth = 'startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (smooth) {
+          (document as Document & { startViewTransition: (cb: () => void) => unknown }).startViewTransition(() => commit(theme));
+        } else {
+          root.classList.add('theme-anim');
+          commit(theme);
+          setTimeout(() => root.classList.remove('theme-anim'), 380);
+        }
       };
       button.addEventListener('click', () => apply(current() === 'dark' ? 'light' : 'dark'));
     });

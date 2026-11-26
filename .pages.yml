@@ -101,7 +101,7 @@ content:
           - { name: widgetId, label: Widget ID, type: string }
 
   - name: pages
-    label: About / Research / CV
+    label: About / Research
     type: collection
     path: src/content/pages
     exclude: ["en-*.md", "en-*.mdx"]
@@ -120,7 +120,7 @@ content:
         label: Page
         type: select
         required: true
-        options: { values: [about, research, cv] }
+        options: { values: [about, research] }
       - name: body
         label: Content
         type: rich-text

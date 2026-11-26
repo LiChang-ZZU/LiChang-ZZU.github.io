@@ -32,7 +32,6 @@ const now = new Date();
 const pad = (n) => String(n).padStart(2, '0');
 const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 
-const image = await sharp(source, { failOn: 'none' }).rotate();
 const meta = await sharp(source, { failOn: 'none' }).metadata();
 let pipeline = () => {
   let p = sharp(source, { failOn: 'none' }).rotate();
@@ -41,7 +40,6 @@ let pipeline = () => {
   }
   return p.flatten({ background: '#ffffff' });
 };
-void image;
 
 let quality = 82;
 let buffer = await pipeline().jpeg({ quality, mozjpeg: true, progressive: true }).toBuffer();

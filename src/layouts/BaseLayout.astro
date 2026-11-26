@@ -41,7 +41,16 @@ const {
     <BackToTop {locale} />
     <LiveChat />
     <script>
-      const reveal = () => {
+      const setupReveal = () => {
+        const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!reduce) {
+          const targets = 'main .page-head .container > *, main .article-head > *, main .section > .container > *';
+          document.querySelectorAll<HTMLElement>(targets).forEach((el, index) => {
+            if (el.hasAttribute('data-reveal')) return;
+            el.setAttribute('data-reveal', 'fade-up');
+            if (!el.style.getPropertyValue('--stagger')) el.style.setProperty('--stagger', String(Math.min(index, 4)));
+          });
+        }
         const els = document.querySelectorAll<HTMLElement>('[data-reveal]');
         if (!('IntersectionObserver' in window)) { els.forEach((el) => el.classList.add('is-revealed')); return; }
         const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
@@ -49,7 +58,7 @@ const {
         }), { threshold: .12, rootMargin: '0px 0px -5% 0px' });
         els.forEach((el) => observer.observe(el));
       };
-      reveal(); document.addEventListener('astro:after-swap', reveal);
+      setupReveal(); document.addEventListener('astro:after-swap', setupReveal);
     </script>
   </body>
 </html>

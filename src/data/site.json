@@ -41,29 +41,14 @@
       "en": "Research"
     },
     {
-      "key": "publications",
-      "zh": "论文",
-      "en": "Publications"
-    },
-    {
-      "key": "projects",
-      "zh": "项目",
-      "en": "Projects"
-    },
-    {
       "key": "interests",
       "zh": "兴趣",
       "en": "Interests"
     },
     {
-      "key": "blog",
-      "zh": "博客",
-      "en": "Blog"
-    },
-    {
-      "key": "cv",
-      "zh": "履历",
-      "en": "CV"
+      "key": "news",
+      "zh": "动态",
+      "en": "News"
     }
   ],
   "defaultLocale": "zh",

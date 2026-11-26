@@ -61,7 +61,7 @@ const photos = defineCollection({
 
 const pages = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/pages' }),
-  schema: z.object({ title: z.string(), description: z.string(), locale, page: z.enum(['about','research','cv']), updated: optionalDate })
+  schema: z.object({ title: z.string(), description: z.string(), locale, page: z.enum(['about','research']), updated: optionalDate })
 });
 
 export const collections = { blog, publications, projects, news, photos, pages };
