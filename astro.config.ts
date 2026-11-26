@@ -20,6 +20,7 @@ export default defineConfig({
   base: process.env.BASE_PATH || siteSettings.deployment.basePath || inferredBase,
   output: 'static',
   trailingSlash: 'always',
+  redirects: { '/cv/': '/about/', '/en/cv/': '/en/about/' },
   integrations: [mdx(), sitemap({ filter: (page) => !page.endsWith('/404/') })],
   markdown: {
     processor: unified({
