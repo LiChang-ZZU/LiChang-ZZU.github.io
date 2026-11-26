@@ -8,12 +8,13 @@ import Comments from './Comments.astro';
 import type { Locale } from '@/types';
 import { assetUrl, getLocalizedPath } from '@/utils/urls';
 import { formatDate, getReadingTime, getRelatedPosts, isPublished } from '@/utils/content';
+import { sectionedBody } from '@/utils/markdown-html';
 interface Props { post: CollectionEntry<'blog'>; locale: Locale }
 const { post, locale }=Astro.props;
 const all=(await getCollection('blog')).filter(isPublished);
 const localized=all.filter((x)=>x.data.locale===locale).sort((a,b)=>a.data.date.getTime()-b.data.date.getTime());
 const index=localized.findIndex((x)=>x.id===post.id);const previous=localized[index-1];const next=localized[index+1];
-const related=getRelatedPosts(post,all);const { Content, headings }=await render(post);
+const related=getRelatedPosts(post,all);const { Content, headings }=await render(post);const bodyHtml=sectionedBody(post.rendered);
 const mins=post.data.readingTime??getReadingTime(post.body,locale);
 const translated=post.data.translationKey?all.find((x)=>x.data.translationKey===post.data.translationKey&&x.data.locale!==locale):undefined;
 const alternatePath=translated?`/blog/${translated.data.slug}/`:'/';
@@ -22,7 +23,7 @@ const alternatePath=translated?`/blog/${translated.data.slug}/`:'/';
   <article data-pagefind-body>
     <header class="article-head copy-container"><div class="meta"><span>{post.data.category}</span><span>·</span><time datetime={post.data.date.toISOString()}>{formatDate(post.data.date,locale)}</time><span>·</span><span>{mins} {locale==='zh'?'分钟阅读':'min read'}</span></div><h1>{post.data.title}</h1><p>{post.data.description}</p>{post.data.updated&&<small>{locale==='zh'?'更新于':'Updated'} {formatDate(post.data.updated,locale)}</small>}</header>
     {post.data.cover&&<figure class="article-cover container"><img src={assetUrl(post.data.cover)} alt={post.data.coverAlt} width="1600" height="900" /></figure>}
-    <div class="article-shell container"><aside><TableOfContents {headings} {locale}/></aside><div class="article-main"><div class="prose"><Content /></div><ShareButtons title={post.data.title} {locale}/><nav class="post-nav" aria-label={locale==='zh'?'文章导航':'Post navigation'}>{previous?<a href={getLocalizedPath(locale,`/blog/${previous.data.slug}/`)}><span>{locale==='zh'?'上一篇':'Previous'}</span><strong>{previous.data.title}</strong></a>:<span></span>}{next&&<a class="next" href={getLocalizedPath(locale,`/blog/${next.data.slug}/`)}><span>{locale==='zh'?'下一篇':'Next'}</span><strong>{next.data.title}</strong></a>}</nav><Comments {locale}/></div></div>
+    <div class="article-shell container"><aside><TableOfContents {headings} {locale}/></aside><div class="article-main"><div class="prose">{bodyHtml!==undefined?<Fragment set:html={bodyHtml} />:<Content />}</div><ShareButtons title={post.data.title} {locale}/><nav class="post-nav" aria-label={locale==='zh'?'文章导航':'Post navigation'}>{previous?<a href={getLocalizedPath(locale,`/blog/${previous.data.slug}/`)}><span>{locale==='zh'?'上一篇':'Previous'}</span><strong>{previous.data.title}</strong></a>:<span></span>}{next&&<a class="next" href={getLocalizedPath(locale,`/blog/${next.data.slug}/`)}><span>{locale==='zh'?'下一篇':'Next'}</span><strong>{next.data.title}</strong></a>}</nav><Comments {locale}/></div></div>
   </article>
   {related.length>0&&<section class="section related container"><h2>{locale==='zh'?'相关文章':'Related writing'}</h2><div>{related.map((item)=><BlogCard post={item} {locale}/>)}</div></section>}
 </BaseLayout>

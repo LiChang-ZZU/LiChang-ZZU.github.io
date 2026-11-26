@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import type { Locale } from '@/types';
 import { assetUrl } from '@/utils/urls';
+import { sectionedBody } from '@/utils/markdown-html';
 import site from '@/data/site';
 import { existsSync } from 'node:fs';
 interface Props { locale: Locale; page: 'about'|'research'|'cv' }
@@ -11,19 +12,27 @@ const entries = await getCollection('pages');
 const entry = entries.find((x)=>x.data.locale===locale&&x.data.page===page);
 if (!entry) throw new Error(`Missing ${locale}/${page} page content`);
 const { Content } = await render(entry);
-// 没有正文内容的二级标题小节（如暂无奖项荣誉）直接隐藏，避免出现空标题。
-const hideEmptySections = (markup: string) => markup.split(/(?=<h2\b)/i).filter((block) => {
-  if (!/^\s*<h2\b/i.test(block)) return block.trim().length > 0;
-  const body = block.replace(/<h2\b[\s\S]*?<\/h2>/i, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').trim();
-  return body.length > 0 || /<(img|table|iframe|video|blockquote)\b/i.test(block);
-}).join('');
-const html = entry.rendered?.html;
-const bodyHtml = html ? hideEmptySections(html) : undefined;
+const bodyHtml = sectionedBody(entry.rendered);
 const labels = { about: locale==='zh'?'关于':'About', research: locale==='zh'?'研究':'Research', cv:'CV' };
 const cvHref = site.cv && existsSync(`public${site.cv}`) ? assetUrl(site.cv) : undefined;
+const portrait = page === 'about' && site.aboutPortrait ? site.aboutPortrait : undefined;
 ---
 <BaseLayout title={entry.data.title} description={entry.data.description} {locale}>
   <header class="page-head"><div class="container"><p class="eyebrow">{labels[page]}</p><h1>{entry.data.title}</h1><p>{entry.data.description}</p>{page==='cv'&&cvHref&&<a class="button cv-download" href={cvHref} download>{locale==='zh'?'下载 PDF':'Download PDF'}</a>}</div></header>
-  <article class="copy-container section prose" data-pagefind-body>{bodyHtml !== undefined ? <Fragment set:html={bodyHtml} /> : <Content />}{page==='cv'&&!cvHref&&<p class="muted"><em>{locale==='zh'?'CV PDF 稍后提供。':'CV PDF will be available soon.'}</em></p>}</article>
+  <div class:list={['about-shell', portrait && 'has-portrait']}>
+    {portrait && <figure class="about-portrait"><img src={assetUrl(portrait)} alt={locale==='zh'?`${site.name}的画像`:`Portrait of ${site.nameEn}`} width="960" height="1200" loading="eager" decoding="async" /><figcaption>{locale==='zh'?`${site.name} · ${site.institution}`:`${site.nameEn} · ${site.institutionEn}`}</figcaption></figure>}
+    <article class="section prose about-body" data-pagefind-body>{bodyHtml !== undefined ? <Fragment set:html={bodyHtml} /> : <Content />}{page==='cv'&&!cvHref&&<p class="muted"><em>{locale==='zh'?'CV PDF 稍后提供。':'CV PDF will be available soon.'}</em></p>}</article>
+  </div>
 </BaseLayout>
-<style>.cv-download{margin-top:1.5rem}</style>
+<style>
+  .cv-download{margin-top:1.5rem}
+  .about-shell .about-body{width:min(calc(100% - 2rem),var(--container-copy));margin-inline:auto}
+  .about-shell.has-portrait{display:grid;grid-template-columns:minmax(0,1fr) clamp(12rem,21vw,17rem);gap:clamp(2rem,4vw,3.5rem);align-items:start;width:min(calc(100% - 2rem),var(--container-wide));margin-inline:auto}
+  .about-shell.has-portrait .about-body{width:auto;margin:0}
+  .about-portrait{grid-column:2;grid-row:1;position:sticky;top:6.5rem;margin:0}
+  .about-portrait img{display:block;width:100%;height:auto;border-radius:calc(var(--radius-md) + .15rem);background:#fff;border:1px solid var(--color-line);box-shadow:var(--shadow-md);filter:saturate(1.02)}
+  .about-portrait figcaption{margin-top:.75rem;color:var(--color-faint);font-size:var(--text-xs);line-height:1.5;text-align:center}
+  :global(html[data-theme="dark"]) .about-portrait img{filter:brightness(.93) contrast(1.03) saturate(1.02);box-shadow:0 30px 70px -30px rgb(0 0 0 / .8),0 0 0 1px rgb(255 255 255 / .08)}
+  @media(prefers-color-scheme:dark){:global(html:not([data-theme])) .about-portrait img{filter:brightness(.93) contrast(1.03) saturate(1.02);box-shadow:0 30px 70px -30px rgb(0 0 0 / .8),0 0 0 1px rgb(255 255 255 / .08)}}
+  @media(max-width:860px){.about-shell.has-portrait{display:block}.about-shell.has-portrait .about-portrait{position:static;max-width:15rem;margin:0 auto 2.5rem}.about-shell.has-portrait .about-body{width:min(calc(100% - 2rem),var(--container-copy));margin-inline:auto}}
+</style>

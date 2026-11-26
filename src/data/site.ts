@@ -28,6 +28,7 @@ export interface SiteSettings {
   institution: string;
   institutionEn: string;
   avatar: string;
+  aboutPortrait: string;
   cv: string;
   github: string;
   googleScholar: string;
@@ -83,6 +84,7 @@ const site: SiteSettings = {
   institution: raw.institution ?? '',
   institutionEn: raw.institutionEn ?? '',
   avatar: raw.avatar ?? '/uploads/profile-placeholder.svg',
+  aboutPortrait: raw.aboutPortrait ?? '',
   cv: raw.cv ?? '',
   github: raw.github ?? '',
   googleScholar: raw.googleScholar ?? '',
