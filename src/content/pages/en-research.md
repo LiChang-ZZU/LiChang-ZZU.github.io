@@ -1,6 +1,6 @@
 ---
 title: Research
-description: Research questions, methods, and ongoing directions.
+description: Research questions, methods, and directions in progress.
 locale: en
 page: research
 draft: false
@@ -8,19 +8,19 @@ translationGenerated: true
 translationModel: deepseek-v4-flash
 translationSource: src/content/pages/zh-research.md
 ---
-## Research agenda
+## Research Focus
 
-I work on a concrete question: how can large crowds move realistically in virtual environments, fast enough to be practical, and credibly enough to be trusted?
+I care about a concrete question: how to make large-scale crowds move realistically in virtual environments, compute fast enough, and produce results that are trustworthy.
 
-Real-world crowd trajectories are often sparse and incomplete. My work combines small models for local interaction with large models for semantics and common sense, reconstructing coherent and plausible collective motion from incomplete data.
+Real-world captured crowd trajectories are often sparse and incomplete. My research attempts to model local interactions with small models and to fill in semantics and common sense with large models, reconstructing coherent and plausible crowd motion under conditions of incomplete data.
 
-## Current directions
+## Current Directions
 
-- Crowd reconstruction and completion from incomplete trajectories
-- Behaviour generation through collaboration between small and large models
-- Reinforcement-learning-driven agent decision-making
-- Real-time rendering and trustworthy presentation of simulation results
+- Crowd reconstruction and completion under incomplete trajectory data
+- Behavior generation through collaboration between small and large models
+- Reinforcement learning-driven agent decision-making
+- Trustworthy presentation of real-time rendering and simulation results
 
-## Methods and open practices
+## Methods and Open Practices
 
-Built on public datasets and consistent evaluation metrics, the work aims to stay reproducible: code, experiment configurations, and results are released alongside each paper.
+Building on public datasets and unified evaluation metrics, I strive to make methods reproducible: code, experiment configurations, and results will be organized and released together with the papers.

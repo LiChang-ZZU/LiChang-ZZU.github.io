@@ -11,13 +11,8 @@
       "targetPath": "src/content/pages/en-about.md",
       "generated": true
     },
-    "src/content/pages/zh-cv.md": {
-      "hash": "56bf0acac1eadf27c1bf92bdd0c4280e8ec58076a807f50756e69316cddf7218",
-      "targetPath": "src/content/pages/en-cv.md",
-      "generated": true
-    },
     "src/content/pages/zh-research.md": {
-      "hash": "6771dbbf70708bcedc1a47be84012357bcf0b6e28d7c9d66d0ba4d7ee3aafee6",
+      "hash": "9cede7b5dad6cbee568fcec5818e0c1a43e5f9b1c5269ee5d2802f3787ddbc46",
       "targetPath": "src/content/pages/en-research.md",
       "generated": true
     },
