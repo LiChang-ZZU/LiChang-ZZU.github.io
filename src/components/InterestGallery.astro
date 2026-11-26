@@ -1,9 +1,15 @@
 ---
+import fs from 'node:fs';
+import path from 'node:path';
 import { getCollection } from 'astro:content';
 import type { Locale } from '@/types';
 import { assetUrl } from '@/utils/urls';
 interface Props { locale: Locale }
 const { locale } = Astro.props;
+type Derivative = { src: string; width: number; height: number };
+let manifest: Record<string, Derivative> = {};
+try { manifest = JSON.parse(fs.readFileSync(path.join(process.cwd(), '.photo-manifest.json'), 'utf8')); } catch {}
+const imageOf = (image: string) => manifest[image] ?? { src: image, width: 0, height: 0 };
 const photos = (await getCollection('photos', ({ data }) => !data.draft))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 const fmt = (date: Date) => new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-GB', { year: 'numeric', month: '2-digit' }).format(date).replace(/\//g, '.');
@@ -13,8 +19,8 @@ const fmt = (date: Date) => new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 
     <div class="photo-grid">
       {photos.map((photo) => (
         <figure class="photo-item">
-          <button type="button" class="photo-trigger" data-full={assetUrl(photo.data.image)} data-title={photo.data.title} aria-label={photo.data.title}>
-            <img src={assetUrl(photo.data.image)} alt={photo.data.title} loading="lazy" decoding="async" />
+          <button type="button" class="photo-trigger" data-full={assetUrl(imageOf(photo.data.image).src)} data-title={photo.data.title} aria-label={photo.data.title}>
+            <img src={assetUrl(imageOf(photo.data.image).src)} alt={photo.data.title} width={imageOf(photo.data.image).width || undefined} height={imageOf(photo.data.image).height || undefined} loading="lazy" decoding="async" />
           </button>
           <figcaption>
             <span class="photo-title">{photo.data.title}</span>

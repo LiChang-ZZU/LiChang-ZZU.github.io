@@ -1,5 +1,7 @@
 node_modules/
 dist/
+public/uploads/optimized/
+.photo-manifest.json
 .astro/
 .env
 .DS_Store

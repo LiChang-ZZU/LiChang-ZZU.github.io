@@ -255,7 +255,7 @@ content:
     format: yaml-frontmatter
     operations: { create: true, delete: true }
     view:
-      fields: [title, date, location, featured, draft]
+      fields: [title, date, location, maxSize, featured, draft]
       primary: title
       sort: [date, title]
       default: { sort: date, order: desc }
@@ -266,6 +266,8 @@ content:
       - { name: location, label: Location, type: string }
       - { name: caption, label: Caption, type: text }
       - { name: tags, label: Tags, type: string, list: true }
+      - { name: compress, label: Compress automatically, type: boolean, default: true }
+      - { name: maxSize, label: Max file size (MB), type: select, default: 1, options: { values: [0.3, 0.5, 1, 2, 3] } }
       - { name: featured, label: Featured, type: boolean, default: false }
       - { name: draft, label: Draft, type: boolean, default: false }
 
