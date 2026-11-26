@@ -8,6 +8,7 @@
     "build:astro": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro build",
     "build:search": "pagefind --site dist",
     "photos:optimize": "node scripts/optimize-photos.mjs",
+    "photos:add": "node scripts/add-photo.mjs",
     "build": "npm run photos:optimize && npm run build:astro && npm run build:search",
     "translate": "node scripts/translate-content.mjs",
     "translate:auto": "node scripts/translate-content.mjs --skip-if-unconfigured",
