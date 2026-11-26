@@ -3,14 +3,14 @@ media:
     label: Images
     input: public/uploads
     output: /uploads
-    rename: safe
-    categories: [image]
+    rename: false
+    extensions: [jpg, jpeg, png, webp]
   - name: documents
     label: Documents
     input: public/cv
     output: /cv
-    rename: safe
-    categories: [document]
+    rename: false
+    extensions: [pdf]
 
 settings:
   content:
