@@ -253,6 +253,7 @@ content:
     type: collection
     path: src/content/photos
     format: yaml-frontmatter
+    filename: { template: "{year}-{month}-{day}-{hour}{minute}{second}.md", field: false }
     operations: { create: true, delete: true }
     view:
       fields: [title, date, location, maxSize, featured, draft]
@@ -267,7 +268,7 @@ content:
       - { name: caption, label: Caption, type: text }
       - { name: tags, label: Tags, type: string, list: true }
       - { name: compress, label: Compress automatically, type: boolean, default: true }
-      - { name: maxSize, label: Max file size (MB), type: select, default: 1, options: { values: [0.3, 0.5, 1, 2, 3] } }
+      - { name: maxSize, label: Max file size (MB), type: select, default: "1", options: { values: ["0.3", "0.5", "1", "2", "3"] } }
       - { name: featured, label: Featured, type: boolean, default: false }
       - { name: draft, label: Draft, type: boolean, default: false }
 
