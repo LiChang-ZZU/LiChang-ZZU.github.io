@@ -50,6 +50,11 @@
       "en": "Projects"
     },
     {
+      "key": "interests",
+      "zh": "兴趣",
+      "en": "Interests"
+    },
+    {
       "key": "blog",
       "zh": "博客",
       "en": "Blog"

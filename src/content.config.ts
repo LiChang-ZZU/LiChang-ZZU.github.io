@@ -49,9 +49,18 @@ const news = defineCollection({
   })
 });
 
+const photos = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/photos', generateId: pathId }),
+  schema: z.object({
+    title: z.string(), date: z.coerce.date(), image: z.string(), location: z.string().default(''),
+    caption: z.string().default(''), tags: z.array(z.string()).default([]),
+    featured: z.boolean().default(false), draft: z.boolean().default(false)
+  })
+});
+
 const pages = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/pages' }),
   schema: z.object({ title: z.string(), description: z.string(), locale, page: z.enum(['about','research','cv']), updated: optionalDate })
 });
 
-export const collections = { blog, publications, projects, news, pages };
+export const collections = { blog, publications, projects, news, photos, pages };

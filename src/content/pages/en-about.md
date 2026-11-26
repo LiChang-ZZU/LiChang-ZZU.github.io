@@ -1,6 +1,6 @@
 ---
 title: About Me
-description: Personal background, research interests, and academic experience.
+description: Background, education, and research directions.
 locale: en
 page: about
 draft: false
@@ -8,18 +8,24 @@ translationGenerated: true
 translationModel: deepseek-v4-flash
 translationSource: src/content/pages/zh-about.md
 ---
+
 ## Introduction
 
-Please fill in your formal personal introduction in the content backend. It is recommended to use two to four paragraphs to explain your research topics, working methods, and the questions you are currently most concerned about.
+Chang Li is a Ph.D. student in Computer Science and Technology at the School of Computer and Artificial Intelligence, Zhengzhou University. He began his undergraduate studies at Zhengzhou University in 2020, joined the master's program in 2024, and transferred to the doctoral program in 2026 — all within the School of Computer and Artificial Intelligence, majoring in Computer Science and Technology.
+
+His research focuses on multi-agent simulation, reinforcement learning, computer graphics, and swarm intelligence, with an emphasis on understanding, modeling, and reproducing the interaction and emergence patterns of complex collectives to support autonomous decision-making, collaborative evolution, and trustworthy simulation of large-scale agents.
 
 ## Education
 
-Not yet filled in. You can add real experience in the format "time — degree — school — research direction."
+**Zhengzhou University · School of Computer and Artificial Intelligence · Computer Science and Technology**
 
-## Academic Experience
+- Sep 2026 — Present　Ph.D. student (transferred from the master's program)
+- Sep 2024 — Sep 2026　Master's student (2024 cohort)
+- Sep 2020 — Jun 2024　B.Eng.
 
-Not yet filled in. Only add positions, visiting or collaborative experiences that can be publicly verified.
+## Research Directions
 
-## Honors and Service
-
-Not yet filled in. You can record real awards, academic service, and community contributions here.
+- Multi-Agent Simulation
+- Reinforcement Learning
+- Computer Graphics
+- Swarm Intelligence
