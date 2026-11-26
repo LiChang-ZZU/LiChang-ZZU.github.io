@@ -3,22 +3,28 @@ import type { Locale } from '@/types';
 interface Props { locale: Locale }
 const { locale } = Astro.props;
 ---
-<button class="theme-toggle" type="button" aria-label={locale === 'zh' ? '切换颜色主题' : 'Change color theme'} title={locale === 'zh' ? '主题：系统 / 浅色 / 深色' : 'Theme: system / light / dark'}>
+<button class="theme-toggle" type="button" aria-label={locale === 'zh' ? '切换深浅色模式' : 'Toggle light and dark mode'} title={locale === 'zh' ? '切换浅色 / 深色' : 'Toggle light / dark'}>
   <span aria-hidden="true" class="theme-icon">◐</span><span class="theme-label">{locale === 'zh' ? '主题' : 'Theme'}</span>
 </button>
 <script>
   const setupTheme = () => {
     document.querySelectorAll<HTMLButtonElement>('.theme-toggle').forEach((button) => {
       if (button.dataset.ready) return; button.dataset.ready = 'true';
-      const themes = ['system', 'light', 'dark'] as const;
-      const getTheme = () => localStorage.getItem('theme') ?? 'system';
-      const apply = (theme: string) => {
-        if (theme === 'system') delete document.documentElement.dataset.theme;
-        else document.documentElement.dataset.theme = theme;
-        localStorage.setItem('theme', theme);
+      const root = document.documentElement;
+      const media = matchMedia('(prefers-color-scheme: dark)');
+      const current = () => root.dataset.theme === 'dark' || root.dataset.theme === 'light' ? root.dataset.theme : (media.matches ? 'dark' : 'light');
+      const storedTheme = () => {
+        try { const value = localStorage.getItem('theme'); return value === 'light' || value === 'dark' ? value : null; } catch { return null; }
+      };
+      // 刷新/从往返缓存恢复时，确保页面主题与已保存的偏好一致
+      const sync = () => { const theme = storedTheme(); if (theme) root.dataset.theme = theme; };
+      sync(); addEventListener('pageshow', sync);
+      const apply = (theme: 'light' | 'dark') => {
+        root.dataset.theme = theme;
+        try { localStorage.setItem('theme', theme); } catch {}
         document.dispatchEvent(new CustomEvent('themechange', { detail: theme }));
       };
-      button.addEventListener('click', () => apply(themes[(themes.indexOf(getTheme() as typeof themes[number]) + 1) % themes.length] ?? 'system'));
+      button.addEventListener('click', () => apply(current() === 'dark' ? 'light' : 'dark'));
     });
   };
   setupTheme(); document.addEventListener('astro:after-swap', setupTheme);
