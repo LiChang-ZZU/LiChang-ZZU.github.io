@@ -248,6 +248,27 @@ content:
         type: rich-text
         options: { format: markdown, media: images, switcher: true }
 
+  - name: photos
+    label: Photography
+    type: collection
+    path: src/content/photos
+    format: yaml-frontmatter
+    operations: { create: true, delete: true }
+    view:
+      fields: [title, date, location, featured, draft]
+      primary: title
+      sort: [date, title]
+      default: { sort: date, order: desc }
+    fields:
+      - { name: title, label: Title, type: string, required: true }
+      - { name: image, label: Photo, type: image, options: { media: images }, required: true }
+      - { name: date, label: Date, type: date, required: true }
+      - { name: location, label: Location, type: string }
+      - { name: caption, label: Caption, type: text }
+      - { name: tags, label: Tags, type: string, list: true }
+      - { name: featured, label: Featured, type: boolean, default: false }
+      - { name: draft, label: Draft, type: boolean, default: false }
+
   - name: news
     label: News
     type: collection
