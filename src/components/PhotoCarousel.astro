@@ -302,6 +302,9 @@ const responsiveSizes = (ratio: number, side = false) => {
 </script>
 <style>
   .carousel-stage{--carousel-stage-height:clamp(14rem,min(58vw,62dvh),38rem);position:relative;isolation:isolate;overflow:hidden;width:100%;height:var(--carousel-stage-height);perspective:1200px;touch-action:pan-y;background:transparent}
+  .carousel-stage::before,.carousel-stage::after{content:"";position:absolute;z-index:4;inset-block:0;width:min(clamp(3rem,12vw,11rem),calc(50% - var(--active-half-width,30%)));pointer-events:none}
+  .carousel-stage::before{left:0;background:linear-gradient(90deg,var(--color-bg),transparent)}
+  .carousel-stage::after{right:0;background:linear-gradient(270deg,var(--color-bg),transparent)}
   .carousel-slide{position:absolute;top:50%;left:50%;display:block;width:min(76vw,38rem);height:auto;max-width:76vw;max-height:var(--carousel-stage-height);aspect-ratio:var(--photo-ratio);overflow:hidden;border-radius:.68rem;color:#fff;text-decoration:none;transform:translate(calc(-50% + var(--slide-x,0px)),-50%) rotateY(var(--slide-rotate,0deg)) scale(var(--slide-scale,1));transform-style:preserve-3d;backface-visibility:hidden;opacity:var(--slide-opacity,1);filter:var(--slide-filter,none);box-shadow:0 16px 42px rgb(0 0 0 / .12);transition:transform .76s cubic-bezier(.22,1,.36,1),opacity .65s ease,filter .65s ease}
   .carousel-slide :global(picture),.carousel-slide :global(img){position:absolute;inset:0;width:100%;height:100%}
   .carousel-slide :global(img){object-fit:cover;object-position:center;user-select:none;-webkit-user-drag:none}
