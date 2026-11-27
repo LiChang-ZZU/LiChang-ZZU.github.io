@@ -46,6 +46,7 @@ while (offset < tiles.length) {
             return <figure class="photo-item" style={`--photo-ratio:${ratio}`}>
               <a class="photo-trigger pressable" href={assetUrl(image.full)} aria-label={zh ? `查看大图：${title}` : `Enlarge ${title}`}>
                 <ResponsivePhoto {image} {sizes} {alt} priority={rowIndex === 0 && index === 0} />
+                <span class="photo-zoom-hint" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 4.75H4.75V9M15 4.75h4.25V9M4.75 15v4.25H9M19.25 15v4.25H15"/></svg></span>
               </a>
               <figcaption>
                 <span class="photo-title">{title}</span>
@@ -57,12 +58,19 @@ while (offset < tiles.length) {
         </div>;
       })}
     </div>
-    <dialog class="photo-dialog glass-surface motion-dialog" aria-label={zh ? '摄影作品预览' : 'Photograph preview'}>
+    <dialog class="photo-dialog" aria-label={zh ? '摄影作品预览' : 'Photograph preview'}>
       <div class="viewer">
         <div class="viewer-header">
           {photos.length > 1 && <span class="photo-count" aria-live="polite"></span>}
-          <button type="button" class="icon-button" data-photo-zoom aria-label={zh ? '放大照片' : 'Zoom in'} aria-pressed="false" disabled>+</button>
-          <button type="button" class="photo-close icon-button" data-photo-close aria-label={zh ? '关闭' : 'Close'} autofocus>×</button>
+          <div class="viewer-tools">
+            <button type="button" class="viewer-button" data-photo-zoom aria-label={zh ? '放大照片' : 'Zoom in'} aria-pressed="false" disabled>
+              <svg class="zoom-in-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.25"/><path d="m15.4 15.4 4.1 4.1M10.8 8v5.6M8 10.8h5.6"/></svg>
+              <svg class="zoom-out-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.25"/><path d="m15.4 15.4 4.1 4.1M8 10.8h5.6"/></svg>
+            </button>
+            <button type="button" class="viewer-button photo-close" data-photo-close aria-label={zh ? '关闭' : 'Close'} autofocus>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
+            </button>
+          </div>
         </div>
         <div class="viewer-stage">
           <img alt="" decoding="async" hidden />
@@ -71,8 +79,12 @@ while (offset < tiles.length) {
         <div class="viewer-footer">
           <div class="viewer-caption" aria-live="polite"></div>
           {photos.length > 1 && <div class="viewer-controls">
-            <button type="button" class="icon-button" data-photo-step="-1" aria-label={zh ? '上一张' : 'Previous photo'}>‹</button>
-            <button type="button" class="icon-button" data-photo-step="1" aria-label={zh ? '下一张' : 'Next photo'}>›</button>
+            <button type="button" class="viewer-button" data-photo-step="-1" aria-label={zh ? '上一张' : 'Previous photo'}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.75 5.5-6.5 6.5 6.5 6.5"/></svg>
+            </button>
+            <button type="button" class="viewer-button" data-photo-step="1" aria-label={zh ? '下一张' : 'Next photo'}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.25 5.5 6.5 6.5-6.5 6.5"/></svg>
+            </button>
           </div>}
         </div>
       </div>
@@ -96,6 +108,7 @@ while (offset < tiles.length) {
     let revision = 0;
     let upgradePhoto: ((scale: number) => void) | undefined;
     let opener: HTMLAnchorElement;
+    let closing = false;
     let startX = 0;
     let startY = 0;
     image.draggable = false;
@@ -122,7 +135,45 @@ while (offset < tiles.length) {
       }
     }
 
+    function animateFromOpener() {
+      if (motion.matches || !opener || image.hidden) return;
+      const from = opener.getBoundingClientRect();
+      const to = image.getBoundingClientRect();
+      if (!from.width || !from.height || !to.width || !to.height) return;
+      image.animate([
+        {
+          transformOrigin: 'top left',
+          transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})`,
+          opacity: .7,
+        },
+        { transformOrigin: 'top left', transform: 'none', opacity: 1 },
+      ], { duration: 480, easing: 'cubic-bezier(.22,1,.36,1)' });
+    }
+
+    async function closeWithMotion() {
+      if (!dialog.open || closing) return;
+      closing = true;
+      setZoom(false);
+      if (!motion.matches && opener && !image.hidden) {
+        const from = image.getBoundingClientRect();
+        const to = opener.getBoundingClientRect();
+        if (from.width && from.height && to.width && to.height) {
+          const animation = image.animate([
+            { transformOrigin: 'top left', transform: 'none', opacity: 1 },
+            {
+              transformOrigin: 'top left',
+              transform: `translate(${to.left - from.left}px, ${to.top - from.top}px) scale(${to.width / from.width}, ${to.height / from.height})`,
+              opacity: .7,
+            },
+          ], { duration: 300, easing: 'cubic-bezier(.32,0,.67,0)' });
+          try { await animation.finished; } catch {}
+        }
+      }
+      if (dialog.open) dialog.close();
+    }
+
     const show = (next: number) => {
+      const opening = !dialog.open;
       const direction = dialog.open ? Math.sign(next - index) : 0;
       index = (next + triggers.length) % triggers.length;
       const trigger = triggers[index];
@@ -141,11 +192,15 @@ while (offset < tiles.length) {
       if (preview) image.src = preview;
       else image.removeAttribute('src');
 
-      if (!dialog.open) dialog.showModal();
+      if (opening) {
+        document.documentElement.classList.add('photo-view-open');
+        document.body.classList.add('photo-view-open');
+        dialog.showModal();
+      }
       const ratio = Number(thumb.getAttribute('width')) / Number(thumb.getAttribute('height'));
       const hasRatio = Number.isFinite(ratio) && ratio > 0;
-      image.style.setProperty('--viewer-photo-width', hasRatio ? `min(100%, calc(70dvh * ${ratio}))` : '100%');
-      const target = Math.min(dialog.clientWidth, innerHeight * .7 * (hasRatio ? ratio : 1.5)) * Math.min(devicePixelRatio, 2);
+      image.style.setProperty('--viewer-photo-width', hasRatio ? `min(92vw, calc(84dvh * ${ratio}))` : '92vw');
+      const target = Math.min(innerWidth * .92, innerHeight * .84 * (hasRatio ? ratio : 1.5)) * Math.min(devicePixelRatio, 2);
       const format = preview.endsWith('.avif') ? 'avif' : 'webp';
       const srcset = trigger.querySelector<HTMLSourceElement>(`source[type="image/${format}"]`)?.srcset;
       const candidates = srcset?.split(',').map((value) => value.trim().split(' ')) ?? [];
@@ -157,7 +212,8 @@ while (offset < tiles.length) {
           { duration: 300, easing: 'cubic-bezier(.22,1,.36,1)' },
         );
       };
-      if (preview) animate();
+      if (preview && opening) requestAnimationFrame(animateFromOpener);
+      else if (preview) animate();
       upgradePhoto = (scale) => {
         const request = ++revision;
         const source = candidates.find(([, width]) => Number.parseInt(width ?? '', 10) >= target * scale) ?? candidates.at(-1);
@@ -173,7 +229,8 @@ while (offset < tiles.length) {
           image.src = src;
           image.hidden = false;
           zoom.disabled = false;
-          if (firstPaint) animate();
+          if (firstPaint && opening) requestAnimationFrame(animateFromOpener);
+          else if (firstPaint) animate();
         }).catch(() => {
           if (request === revision && dialog.open && image.hidden) error.hidden = false;
         });
@@ -188,12 +245,19 @@ while (offset < tiles.length) {
         show(i);
       });
     }
-    dialog.querySelector('[data-photo-close]')!.addEventListener('click', () => dialog.close());
+    dialog.querySelector('[data-photo-close]')!.addEventListener('click', () => void closeWithMotion());
     const toggleZoom = () => { if (!zoom.disabled) setZoom(!stage.classList.contains('is-zoomed')); };
     zoom.addEventListener('click', toggleZoom);
     image.addEventListener('click', toggleZoom);
-    dialog.addEventListener('close', () => { revision += 1; opener?.focus(); });
-    dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+    dialog.addEventListener('close', () => {
+      revision += 1;
+      closing = false;
+      document.documentElement.classList.remove('photo-view-open');
+      document.body.classList.remove('photo-view-open');
+      opener?.focus();
+    });
+    dialog.addEventListener('cancel', (event) => { event.preventDefault(); void closeWithMotion(); });
+    dialog.addEventListener('click', (event) => { if (event.target === dialog) void closeWithMotion(); });
     for (const button of dialog.querySelectorAll<HTMLButtonElement>('[data-photo-step]')) {
       button.addEventListener('click', () => show(index + Number(button.dataset.photoStep)));
     }
@@ -220,34 +284,55 @@ while (offset < tiles.length) {
   }
 </script>
 <style>
-  .photo-grid{display:grid;gap:clamp(1.65rem,4vw,3.25rem)}
-  .photo-row{display:grid;grid-template-columns:var(--columns);gap:clamp(1rem,2.5vw,1.75rem)}
+  .photo-grid{display:grid;gap:clamp(2.4rem,5vw,4.25rem)}
+  .photo-row{display:grid;grid-template-columns:var(--columns);gap:clamp(1rem,2.2vw,1.8rem);align-items:start}
   .photo-item{min-width:0;margin:0}
-  .photo-trigger{position:relative;display:block;overflow:hidden;border-radius:var(--radius-lg);background:var(--color-surface);cursor:zoom-in}
-  .photo-trigger :global(img){width:100%;height:auto;aspect-ratio:var(--photo-ratio);object-fit:cover;transition:transform .6s var(--ease-out)}
+  .photo-trigger{position:relative;display:block;overflow:hidden;border-radius:1rem;background:var(--color-surface);cursor:zoom-in;isolation:isolate}
+  .photo-trigger :global(img){width:100%;height:auto;aspect-ratio:var(--photo-ratio);object-fit:cover;transition:transform .8s cubic-bezier(.2,.7,.1,1),filter .55s ease}
   .featured-row .photo-trigger :global(img){object-position:center 61%}
-  @media(hover:hover){.photo-trigger:hover :global(img){transform:scale(1.025)}}
-  figcaption,.viewer-caption{display:flex;flex-direction:column;gap:.2rem;margin-top:.8rem}
-  .photo-title{font-size:var(--text-base);font-weight:650}
-  .photo-meta,.photo-caption{color:var(--color-muted);font-size:var(--text-sm)}
-  .photo-dialog{--color-surface:#121718;--glass-fill:rgb(20 26 27 / .84);--glass-sheen:rgb(255 255 255 / .095);--glass-rim:rgb(255 255 255 / .18);width:min(94vw,76rem);max-height:94dvh;padding:0;overflow:auto;overscroll-behavior:contain;border-radius:var(--radius-lg);color:#fff}
-  .photo-dialog::backdrop{background:rgb(8 14 16 / .82);backdrop-filter:blur(var(--glass-blur))}
-  .viewer-header,.viewer-footer{display:flex;justify-content:space-between;align-items:center;gap:.65rem;padding:.65rem 1rem}
-  .viewer-header{justify-content:flex-end}
-  .photo-count{margin-right:auto;color:#d1dcdf;font-size:var(--text-sm);font-variant-numeric:tabular-nums}
-  .viewer-stage{display:grid;min-height:min(33vh,15rem);place-items:center;background:#080a0b;touch-action:pan-y}
-  .viewer-stage img{width:var(--viewer-photo-width,auto);max-width:100%;max-height:70dvh;object-fit:contain;cursor:zoom-in}
-  .viewer-stage.is-zoomed{max-height:70dvh;overflow:auto;place-items:start;touch-action:auto}
-  .viewer-stage.is-zoomed img{width:calc(var(--viewer-photo-width,100%) * 1.65);max-width:none;max-height:none;cursor:zoom-out}
+  .photo-zoom-hint{position:absolute;right:.8rem;bottom:.8rem;display:grid;width:2.65rem;height:2.65rem;place-items:center;border:1px solid rgb(255 255 255 / .5);border-radius:50%;background:rgb(20 22 24 / .26);color:white;opacity:0;scale:.9;transition:opacity .25s ease,scale .35s var(--ease-out),background-color .25s ease;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+  .photo-zoom-hint svg{width:1.15rem;height:1.15rem;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+  @media(hover:hover){.photo-trigger:hover :global(img){transform:scale(1.035)}.photo-trigger:hover .photo-zoom-hint,.photo-trigger:focus-visible .photo-zoom-hint{opacity:1;scale:1}}
+  figcaption,.viewer-caption{display:flex;flex-direction:column;gap:.18rem;margin-top:.72rem}
+  .photo-title{font-size:var(--text-base);font-weight:590;letter-spacing:-.012em}
+  .photo-meta,.photo-caption{color:var(--color-muted);font-size:var(--text-sm);line-height:1.55}
+  .photo-dialog{position:fixed;inset:0;width:100vw;height:100%;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;overflow:hidden;border:0;border-radius:0;background:rgb(15 16 18 / .96);color:#f5f5f7;overscroll-behavior:contain}
+  :global(html.photo-view-open),:global(body.photo-view-open){overflow:hidden;scrollbar-width:none}
+  :global(html.photo-view-open::-webkit-scrollbar),:global(body.photo-view-open::-webkit-scrollbar){display:none}
+  .photo-dialog::backdrop{background:rgb(9 10 12 / .88);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:1;transition:opacity .34s ease,display .34s allow-discrete,overlay .34s allow-discrete}
+  @starting-style{.photo-dialog[open]::backdrop{opacity:0}}
+  .viewer{position:relative;width:100%;height:100%;min-height:0;isolation:isolate}
+  .viewer-header{position:absolute;z-index:3;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:max(1rem,env(safe-area-inset-top)) clamp(1rem,4vw,3.5rem) .75rem;color:#f5f5f7}
+  .photo-count{color:rgb(255 255 255 / .78);font-size:.8rem;font-variant-numeric:tabular-nums;letter-spacing:.035em}
+  .viewer-tools,.viewer-controls{display:flex;align-items:center;gap:.48rem}
+  .viewer-button{flex:none;display:grid;width:2.9rem;height:2.9rem;place-items:center;padding:0;border:1px solid rgb(255 255 255 / .16);border-radius:50%;background:rgb(255 255 255 / .085);color:#fff;cursor:pointer;transition:background-color .2s ease,border-color .2s ease,scale .26s var(--ease-out),opacity .2s ease;-webkit-backdrop-filter:blur(20px) saturate(145%);backdrop-filter:blur(20px) saturate(145%)}
+  .viewer-button svg{width:1.25rem;height:1.25rem;fill:none;stroke:currentColor;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
+  .viewer-button:hover:not(:disabled){background:rgb(255 255 255 / .17);border-color:rgb(255 255 255 / .3)}
+  .viewer-button:active:not(:disabled){scale:.92}
+  .viewer-button:disabled{opacity:.42;cursor:default}
+  .viewer-button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  [data-photo-zoom][aria-pressed="true"] .zoom-in-icon{display:none}
+  [data-photo-zoom][aria-pressed="false"] .zoom-out-icon{display:none}
+  .viewer-stage{position:absolute;inset:4.75rem 0 7.4rem;display:grid;place-items:center;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:none;touch-action:pan-y}
+  .viewer-stage::-webkit-scrollbar{display:none}
+  .viewer-stage img{display:block;width:var(--viewer-photo-width,92vw);max-width:92vw;max-height:84dvh;object-fit:contain;cursor:zoom-in;user-select:none;-webkit-user-drag:none}
+  .viewer-stage.is-zoomed{place-items:start;touch-action:pan-x pan-y}
+  .viewer-stage.is-zoomed img{width:calc(var(--viewer-photo-width,92vw) * 1.65);max-width:none;max-height:none;cursor:zoom-out}
   .viewer-stage img[hidden]{display:none}
-  .viewer-caption{margin:0;color:#fff}
-  .viewer-caption :global(.photo-meta),.viewer-caption :global(.photo-caption){color:#d1dcdf}
-  .viewer-controls{display:flex;gap:.5rem}
-  .viewer button{flex:none;display:grid;place-items:center;width:2.75rem;height:2.75rem;padding:0;border:1px solid rgb(255 255 255 / .2);border-radius:50%;background:#222a2d;color:#fff;font-size:1.6rem;line-height:1;cursor:pointer}
-  .viewer button:hover{background:#37454a}
-  .viewer button:disabled{opacity:.45;cursor:default}
+  .photo-error{color:rgb(255 255 255 / .75)}
+  .viewer-footer{position:absolute;z-index:3;right:0;bottom:0;left:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:1rem;padding:1rem clamp(1rem,4vw,3.5rem) max(1.1rem,env(safe-area-inset-bottom));background:linear-gradient(0deg,rgb(12 13 15 / .38),transparent 100%);pointer-events:none}
+  .viewer-caption{min-width:0;margin:0;color:#fff;pointer-events:auto}
+  .viewer-caption :global(.photo-title){font-size:var(--text-base);font-weight:560}
+  .viewer-caption :global(.photo-meta),.viewer-caption :global(.photo-caption){color:rgb(255 255 255 / .68)}
+  .viewer-controls{pointer-events:auto}
   @media(max-width:620px){
-    .photo-row{grid-template-columns:minmax(0,1fr);gap:1.65rem}
-    .photo-trigger :global(img){aspect-ratio:clamp(.8,var(--photo-ratio),1.6)}
+    .photo-grid{gap:2.5rem}.photo-row{grid-template-columns:minmax(0,1fr);gap:2rem}
+    .photo-trigger{border-radius:.8rem}.photo-trigger :global(img){aspect-ratio:clamp(.8,var(--photo-ratio),1.6)}
+    .photo-dialog{background:rgb(11 12 14 / .98)}.viewer-header{padding-inline:1rem}
+    .viewer-stage{inset:4.3rem 0 7rem}.viewer-stage img{max-width:94vw;max-height:80dvh}
+    .viewer-footer{grid-template-columns:minmax(0,1fr);align-items:start;gap:.85rem;padding-inline:1rem}
+    .viewer-caption{max-width:100%;padding-right:1rem}.viewer-controls{justify-self:end;gap:.4rem}
+    .viewer-button{width:2.75rem;height:2.75rem}
   }
+  @media(prefers-reduced-transparency:reduce){.photo-dialog::backdrop{backdrop-filter:none;-webkit-backdrop-filter:none}.viewer-button{background:rgb(32 34 37 / .96);backdrop-filter:none;-webkit-backdrop-filter:none}}
 </style>

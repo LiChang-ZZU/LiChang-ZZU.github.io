@@ -28,21 +28,22 @@ const slides = photos.map(({ data }) => ({
         </a>
       </Wrapper>;
     })}
-  </div>
   {slides.length > 1 && <div class="carousel-controls" data-carousel-controls hidden>
-    <div class="carousel-indicators" aria-label={zh ? '选择照片' : 'Choose a photo'}>
-      {slides.map(({ title }, index) =>
-        <button class="carousel-dot icon-button" type="button" data-carousel-index={index}
-          aria-current={index === 0 ? 'true' : undefined} aria-label={title}></button>
-      )}
-    </div>
-    <div class="carousel-buttons">
-      <button class="carousel-button icon-button" type="button" data-carousel-step="-1" aria-label={zh ? '上一张' : 'Previous photo'}>‹</button>
-      <button class="carousel-button carousel-play icon-button" type="button" data-carousel-play aria-label={zh ? '暂停轮播' : 'Pause slideshow'}>Ⅱ</button>
-      <button class="carousel-button icon-button" type="button" data-carousel-step="1" aria-label={zh ? '下一张' : 'Next photo'}>›</button>
-    </div>
+    <span class="carousel-count" aria-hidden="true"><span data-carousel-current>01</span><span class="carousel-count-divider">/</span>{String(slides.length).padStart(2, '0')}</span>
+    <span class="carousel-control-divider" aria-hidden="true"></span>
+    <button class="carousel-button" type="button" data-carousel-step="-1" aria-label={zh ? '上一张' : 'Previous photo'}>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 3.75-6.25 6.25 6.25 6.25" /></svg>
+    </button>
+    <button class="carousel-button carousel-play" type="button" data-carousel-play aria-label={zh ? '暂停轮播' : 'Pause slideshow'}>
+      <svg class="pause-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4.5v11M13 4.5v11" /></svg>
+      <svg class="play-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="m7.25 4.5 9 5.5-9 5.5z" /></svg>
+    </button>
+    <button class="carousel-button" type="button" data-carousel-step="1" aria-label={zh ? '下一张' : 'Next photo'}>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 3.75 6.25 6.25-6.25 6.25" /></svg>
+    </button>
     <span class="carousel-status" aria-live="polite"></span>
   </div>}
+  </div>
 </section>
 <script>
   for (const root of document.querySelectorAll<HTMLElement>('[data-carousel]')) {
@@ -51,9 +52,13 @@ const slides = photos.map(({ data }) => ({
     if (!templates.length || !controls) continue;
 
     const stage = root.querySelector<HTMLElement>('.carousel-stage')!;
-    const dots = [...controls.querySelectorAll<HTMLButtonElement>('[data-carousel-index]')];
+    const currentLabel = controls.querySelector<HTMLElement>('[data-carousel-current]')!;
+    const status = controls.querySelector<HTMLElement>('.carousel-status')!;
     const play = controls.querySelector<HTMLButtonElement>('[data-carousel-play]')!;
-    const status = controls.querySelector('.carousel-status')!;
+    const slideTitles = [
+      stage.querySelector('.slide-caption')?.textContent?.trim() ?? '',
+      ...templates.map((template) => template.content.querySelector('.slide-caption')?.textContent?.trim() ?? ''),
+    ];
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     const hover = matchMedia('(hover: hover)');
     let active = stage.querySelector<HTMLAnchorElement>('.is-active')!;
@@ -77,7 +82,8 @@ const slides = photos.map(({ data }) => ({
 
     async function show(next: number, announce: boolean) {
       clearTimeout(timer);
-      desired = (next + dots.length) % dots.length;
+      const count = templates.length + 1;
+      desired = (next + count) % count;
       const index = desired;
       const request = ++revision;
       pending?.remove();
@@ -112,18 +118,15 @@ const slides = photos.map(({ data }) => ({
       slide.classList.add('is-active');
       active = slide;
       current = index;
-      window.setTimeout(() => previous.remove(), motion.matches ? 0 : 550);
-      dots.forEach((dot, dotIndex) => {
-        if (dotIndex === index) dot.setAttribute('aria-current', 'true');
-        else dot.removeAttribute('aria-current');
-      });
-      if (announce) status.textContent = dots[index]?.getAttribute('aria-label') ?? '';
+      window.setTimeout(() => previous.remove(), motion.matches ? 0 : 650);
+      currentLabel.textContent = String(index + 1).padStart(2, '0');
+      if (announce) status.textContent = slideTitles[index] ?? '';
       schedule();
     }
 
     const setPlaying = (value: boolean) => {
       playing = value;
-      play.textContent = playing ? 'Ⅱ' : '▶';
+      play.classList.toggle('is-playing', playing);
       play.setAttribute('aria-label', (playing ? root.dataset.pause : root.dataset.play) ?? '');
       schedule();
     };
@@ -146,10 +149,9 @@ const slides = photos.map(({ data }) => ({
       schedule();
     });
     controls.addEventListener('click', (event) => {
-      if (!(event.target instanceof HTMLElement)) return;
-      const { carouselStep, carouselIndex } = event.target.dataset;
+      if (!(event.target instanceof Element)) return;
+      const { carouselStep } = event.target.closest<HTMLElement>('[data-carousel-step]')?.dataset ?? {};
       if (carouselStep) void show(desired + Number(carouselStep), true);
-      if (carouselIndex !== undefined) void show(Number(carouselIndex), true);
     });
     root.addEventListener('keydown', (event) => {
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
@@ -166,25 +168,28 @@ const slides = photos.map(({ data }) => ({
   }
 </script>
 <style>
-  .carousel-stage{position:relative;isolation:isolate;overflow:hidden;aspect-ratio:2.35;border-radius:var(--radius-lg);background:var(--color-bg)}
-  .carousel-slide{position:absolute;inset:0;z-index:0;display:grid;align-items:end;opacity:0;color:#fff;overflow:hidden;text-decoration:none;transition:opacity .48s var(--ease-out)}
+  .carousel-stage{position:relative;isolation:isolate;overflow:hidden;aspect-ratio:2.2;border-radius:1.25rem;background:#101112}
+  .carousel-slide{position:absolute;inset:0;z-index:0;display:grid;align-items:end;opacity:0;color:#fff;overflow:hidden;text-decoration:none;transition:opacity .62s var(--ease-out)}
   .carousel-slide.is-active{z-index:1;opacity:1}
-  .carousel-slide:focus-visible{outline-offset:-5px;border-radius:var(--radius-lg)}
+  .carousel-slide:focus-visible{outline-offset:-5px;border-radius:1.25rem}
   .carousel-slide :global(img){position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 54%;z-index:-2}
   .carousel-slide.is-portrait{background:#131718}
   .carousel-slide.is-portrait :global(img){object-fit:contain}
-  .carousel-slide::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgb(0 0 0 / .7),transparent 52%);z-index:-1}
-  .slide-caption{padding:clamp(1.15rem,4vw,2.85rem);font-size:clamp(1.35rem,3vw,2.65rem);font-weight:650;line-height:1.15;letter-spacing:-.025em}
-  .carousel-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.55rem .8rem;margin-top:.8rem}
+  .carousel-slide::after{content:"";position:absolute;inset:52% 0 0;background:linear-gradient(0deg,rgb(0 0 0 / .45),transparent);z-index:-1;pointer-events:none}
+  .slide-caption{max-width:min(72%,42rem);padding:clamp(1.15rem,3.4vw,2.5rem);font-size:clamp(1.15rem,2.2vw,1.7rem);font-weight:560;line-height:1.25;letter-spacing:-.025em;text-shadow:0 1px 16px rgb(0 0 0 / .18)}
+  .carousel-controls{position:absolute;z-index:3;right:clamp(.75rem,2.2vw,1.5rem);bottom:clamp(.75rem,2.2vw,1.5rem);display:flex;align-items:center;gap:.16rem;padding:.28rem .42rem .28rem .82rem;border:1px solid rgb(255 255 255 / .21);border-radius:999px;background:rgb(25 27 29 / .56);color:#fff;box-shadow:0 8px 30px rgb(0 0 0 / .16),inset 0 1px rgb(255 255 255 / .1);-webkit-backdrop-filter:blur(24px) saturate(150%);backdrop-filter:blur(24px) saturate(150%)}
   .carousel-controls[hidden]{display:none}
-  .carousel-indicators,.carousel-buttons{display:flex;align-items:center;gap:.25rem}
-  .carousel-dot,.carousel-button{display:grid;place-items:center;border:0;cursor:pointer}
-  .carousel-dot{width:1.6rem;height:2.5rem;padding:0;border-radius:var(--radius-pill);background:none}
-  .carousel-dot::after{content:"";width:.4rem;height:.4rem;border-radius:var(--radius-pill);background:var(--color-faint);transition:width var(--transition-fast),background-color var(--transition-fast)}
-  .carousel-dot[aria-current="true"]::after{width:1rem;background:var(--color-accent)}
-  .carousel-button{width:2.75rem;height:2.75rem;border-radius:var(--radius-pill);background:var(--color-bg);color:var(--color-text);font-size:1.5rem;line-height:1}
-  .carousel-button:hover{background:var(--color-accent-soft)}
-  .carousel-play{font-size:.95rem;font-weight:680}
-  .carousel-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-  @media(max-width:620px){.carousel-stage{aspect-ratio:1.35}}
+  .carousel-count{display:flex;align-items:center;gap:.32rem;min-width:3.2rem;color:rgb(255 255 255 / .91);font-size:.72rem;font-variant-numeric:tabular-nums;letter-spacing:.035em}
+  .carousel-count-divider{color:rgb(255 255 255 / .44)}
+  .carousel-control-divider{width:1px;height:1.15rem;margin-inline:.35rem .2rem;background:rgb(255 255 255 / .23)}
+  .carousel-button{display:grid;place-items:center;width:2.55rem;height:2.55rem;padding:0;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;transition:background-color .2s ease,scale .28s var(--ease-out),color .2s ease}
+  .carousel-button svg{width:1.05rem;height:1.05rem;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+  .carousel-button .play-icon{display:none}
+  .carousel-button:not(.is-playing) .play-icon{display:block}
+  .carousel-button:not(.is-playing) .pause-icon{display:none}
+  .carousel-button:hover{background:rgb(255 255 255 / .14)}
+  .carousel-button:active{scale:.91}
+  .carousel-button:focus-visible{outline:2px solid #fff;outline-offset:1px}
+  @media(max-width:620px){.carousel-stage{aspect-ratio:1.25;border-radius:1rem}.slide-caption{max-width:58%;padding:1rem;font-size:1.05rem}.carousel-controls{right:.65rem;bottom:.65rem;padding:.2rem .3rem .2rem .65rem;gap:.02rem}.carousel-button{width:2.25rem;height:2.25rem}.carousel-control-divider{margin-inline:.15rem}.carousel-count{min-width:2.9rem;font-size:.68rem}}
+  @media(prefers-reduced-transparency:reduce){.carousel-controls{background:rgb(20 22 24 / .92);-webkit-backdrop-filter:none;backdrop-filter:none}}
 </style>
