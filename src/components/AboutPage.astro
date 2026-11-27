@@ -40,28 +40,28 @@ const focus = listItems(focusSection?.html);
 const portrait = site.aboutPortrait;
 const cvHref = site.cv && existsSync(`public${site.cv}`) ? assetUrl(site.cv) : undefined;
 const labels = locale === 'zh'
-  ? { eyebrow: '关于', education: '教育经历', focus: '研究方向' }
-  : { eyebrow: 'About', education: 'Education', focus: 'Research directions' };
+  ? { education: '教育经历', focus: '研究方向' }
+  : { education: 'Education', focus: 'Research directions' };
 const fallback = !introSection && !eduSection && !focusSection;
 ---
 <BaseLayout title={entry.data.title} description={entry.data.description} {locale}>
   {fallback
     ? <div class="about-shell"><article class="prose copy-container" data-pagefind-body><Content /></article></div>
-    : <div class="about-wrap">
+    : <div class="about-wrap container" data-pagefind-body>
         <div class="about-hero">
           <div class="hero-copy">
-            <p class="eyebrow" data-reveal="fade">{labels.eyebrow}</p>
+
             <h1 data-reveal="fade-up">{entry.data.title}</h1>
-            {lede && <p class="lede" data-reveal="fade-up" style="--stagger:1">{lede}</p>}
+            {lede && <p class="lede" data-reveal="fade-up" style="--stagger:1" set:html={lede} />}
             {restIntro.length > 0 && <div class="lede-rest" data-reveal="fade-up" style="--stagger:2">{restIntro.map((html) => <p set:html={html} />)}</div>}
-            {cvHref && <a class="cv-link" href={cvHref} download data-reveal="fade" style="--stagger:3">{locale === 'zh' ? '完整学术履历（PDF）' : 'Full CV (PDF)'}<span aria-hidden="true">↗</span></a>}
+            {cvHref && <a class="cv-link" href={cvHref} download data-reveal="fade" style="--stagger:3">{locale === 'zh' ? '完整学术履历（PDF）' : 'Full CV (PDF)'}</a>}
           </div>
           {portrait && <figure class="portrait" data-reveal="fade" style="--stagger:1"><img src={assetUrl(portrait)} alt={locale === 'zh' ? `${site.name}的照片` : `Portrait of ${site.nameEn}`} width="960" height="1200" loading="eager" decoding="async" /></figure>}
         </div>
 
         <div class="about-details">
-          {(school || rows.length > 0) && <section class="timeline" data-pagefind-body data-reveal="fade-up">
-            <p class="label">{labels.education}</p>
+          {(school || rows.length > 0) && <section class="timeline" data-reveal="fade-up">
+            <h2 class="label">{labels.education}</h2>
             {school && <p class="school" set:html={school} />}
             {rows.length > 0 && <ol>
               {rows.map((row) => <li>
@@ -72,30 +72,30 @@ const fallback = !introSection && !eduSection && !focusSection;
           </section>}
 
           {focus.length > 0 && <section class="focus" data-reveal="fade-up" style="--stagger:1">
-            <p class="label">{labels.focus}</p>
+            <h2 class="label">{labels.focus}</h2>
             <ul class="focus-list">{focus.map((item) => <li>{item}</li>)}</ul>
           </section>}
         </div>
       </div>}
 </BaseLayout>
 <style>
-  .about-wrap{width:min(calc(100% - 2rem),72rem);margin-inline:auto;padding-block:clamp(6.5rem,13vw,9.5rem) clamp(3rem,7vw,6rem)}
-  .about-hero{display:grid;grid-template-columns:minmax(0,1fr) clamp(12rem,19vw,16rem);gap:clamp(1.6rem,3.2vw,3rem);align-items:start}
-  .hero-copy h1{margin:0;font-size:clamp(2.3rem,4.4vw,3.5rem);line-height:1.04;letter-spacing:-.05em;font-weight:700}
-  .lede{max-width:34rem;margin:1.4rem 0 0;font-family:var(--font-serif);font-size:clamp(1.12rem,1rem + .5vw,1.4rem);line-height:1.78;letter-spacing:-.005em}
+  .about-wrap{padding-block:clamp(6.5rem,13vw,9.5rem) clamp(3rem,7vw,6rem)}
+  .about-hero{display:grid;grid-template-columns:minmax(0,1fr) clamp(12rem,23vw,19rem);gap:clamp(2rem,8vw,7rem);align-items:center}
+  .hero-copy h1{margin:0;font-size:clamp(2.85rem,6.6vw,5.6rem);line-height:1.04;letter-spacing:-.05em;font-weight:700}
+  .lede{max-width:34rem;margin:1.4rem 0 0;font-size:clamp(1.12rem,1rem + .5vw,1.4rem);line-height:1.78;letter-spacing:-.005em}
   .lede-rest{max-width:34rem;margin-top:1rem}
-  .lede-rest p{margin:.8em 0;color:var(--color-muted);font-family:var(--font-serif);font-size:1.02rem;line-height:1.85}
+  .lede-rest p{margin:.8em 0;color:var(--color-muted);font-size:var(--text-base);line-height:1.85}
   .cv-link{display:inline-flex;align-items:center;gap:.4rem;margin-top:1.5rem;padding-bottom:.2rem;border-bottom:1px solid color-mix(in srgb,var(--color-accent) 35%,transparent);color:var(--color-accent-strong);font-size:var(--text-sm);font-weight:620;text-decoration:none}
   .cv-link:hover{border-color:currentColor}
-  .portrait{grid-column:2;grid-row:1;margin:0;overflow:hidden;border-radius:1.05rem;background:#fff;box-shadow:var(--shadow-md);aspect-ratio:4/5}  .portrait img{width:100%;height:100%;object-fit:cover;filter:saturate(1.02)}
+  .portrait{grid-column:2;grid-row:1;margin:0;overflow:hidden;border-radius:var(--radius-lg);background:#fff;box-shadow:var(--shadow-md);aspect-ratio:4/5}  .portrait img{width:100%;height:100%;object-fit:cover;filter:saturate(1.02)}
   :global(html[data-theme="dark"]) .portrait{box-shadow:0 26px 60px -28px rgb(0 0 0 / .75),0 0 0 1px rgb(255 255 255 / .07)}
   :global(html[data-theme="dark"]) .portrait img{filter:brightness(.94) contrast(1.03) saturate(1.02)}
   @media(prefers-color-scheme:dark){:global(html:not([data-theme])) .portrait{box-shadow:0 26px 60px -28px rgb(0 0 0 / .75),0 0 0 1px rgb(255 255 255 / .07)}:global(html:not([data-theme])) .portrait img{filter:brightness(.94) contrast(1.03) saturate(1.02)}}
   .about-details{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);gap:clamp(2rem,6vw,5.5rem);margin-top:clamp(2.6rem,6vw,4.5rem);padding-top:clamp(1.8rem,4vw,2.6rem);border-top:1px solid var(--color-line)}
-  .label{margin:0 0 1.5rem;color:var(--color-faint);font-size:var(--text-xs);font-weight:650;letter-spacing:.14em;text-transform:uppercase}
+  .label{margin:0 0 1.5rem;color:var(--color-text);font-size:var(--text-xl);font-weight:650;letter-spacing:-.025em}
   .school{margin:0 0 1.2rem;font-size:var(--text-sm);font-weight:620;letter-spacing:-.01em}
   .timeline ol{list-style:none;margin:0;padding:0}
-  .timeline li{display:grid;grid-template-columns:12.5rem minmax(0,1fr);gap:1.2rem;align-items:baseline;padding:.78rem 0;border-top:1px solid color-mix(in srgb,var(--color-line) 70%,transparent)}
+  .timeline li{display:grid;grid-template-columns:minmax(10rem,.7fr) minmax(0,1fr);gap:1.2rem;align-items:baseline;padding:.78rem 0;border-top:1px solid color-mix(in srgb,var(--color-line) 70%,transparent)}
   .timeline li:first-child{padding-top:0;border-top:0}
   .years{display:flex;gap:.4rem;color:var(--color-muted);font-size:var(--text-sm);font-variant-numeric:tabular-nums;letter-spacing:.01em;white-space:nowrap}
   .years .dash{color:var(--color-faint)}

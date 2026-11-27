@@ -21,7 +21,7 @@ export default defineConfig({
   output: 'static',
   trailingSlash: 'always',
   redirects: { '/cv/': '/about/', '/en/cv/': '/en/about/' },
-  integrations: [mdx(), sitemap({ filter: (page) => !page.endsWith('/404/') })],
+  integrations: [mdx(), sitemap({ filter: (page) => !/\/(404|photo-prep)\/$/.test(page) })],
   markdown: {
     processor: unified({
       remarkPlugins: [remarkGfm, remarkMath],

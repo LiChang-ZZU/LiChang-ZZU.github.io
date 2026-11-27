@@ -1,14 +1,14 @@
 {
   "siteName": "李畅 — 个人学术主页",
-  "siteNameEn": "Chang Li — Personal Academic Homepage",
+  "siteNameEn": "Kyle Lee — Personal Academic Homepage",
   "name": "李畅",
-  "nameEn": "Kyle",
-  "title": "多智能体仿真，强化学习，计算机图形学，群体智能",
-  "titleEn": "Multi-Agent Simulation, Reinforcement Learning, Computer Graphics, Swarm Intelligence",
-  "bio": "多智能体仿真、强化学习、计算机图形学与群体智能的交叉研究，旨在理解、建模并重现复杂群体的交互与涌现规律，为大规模智能体在虚拟与现实环境中的自主决策、协同演化和可信仿真提供基础支撑。",
-  "bioEn": "Interdisciplinary research at the intersection of multi-agent simulation, reinforcement learning, computer graphics, and swarm intelligence, aiming to understand, model, and reproduce the interaction and emergence patterns of complex collectives, providing foundational support for autonomous decision-making, collaborative evolution, and trustworthy simulation of large-scale agents in virtual and real environments.",
+  "nameEn": "Kyle Lee",
+  "title": "郑州大学博士研究生",
+  "titleEn": "PhD student at Zhengzhou University",
+  "bio": "我研究人群仿真，关注怎样从有限的轨迹数据还原群体运动。",
+  "bioEn": "I study crowd simulation and how to reconstruct crowd movement from incomplete trajectories.",
   "description": "李畅的个人学术主页：研究、论文、项目、写作和随笔。",
-  "descriptionEn": "Chang Li's personal academic homepage: research, papers, projects, writing, and essays.",
+  "descriptionEn": "Kyle Lee’s personal academic homepage, with research, publications, and writing.",
   "email": "it_changli@gs.zzu.edu.cn",
   "location": "Zhengzhou, Henan Province, China",
   "institution": "郑州大学",
@@ -41,14 +41,14 @@
       "en": "Research"
     },
     {
-      "key": "interests",
-      "zh": "兴趣",
-      "en": "Interests"
-    },
-    {
       "key": "news",
       "zh": "动态",
       "en": "News"
+    },
+    {
+      "key": "interests",
+      "zh": "兴趣",
+      "en": "Interests"
     }
   ],
   "defaultLocale": "zh",

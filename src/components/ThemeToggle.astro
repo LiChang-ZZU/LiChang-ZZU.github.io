@@ -2,47 +2,60 @@
 import type { Locale } from '@/types';
 interface Props { locale: Locale }
 const { locale } = Astro.props;
+const label = locale === 'zh' ? '切换深浅色模式' : 'Toggle light and dark mode';
 ---
-<button class="theme-toggle" type="button" aria-label={locale === 'zh' ? '切换深浅色模式' : 'Toggle light and dark mode'} title={locale === 'zh' ? '切换浅色 / 深色' : 'Toggle light / dark'}>
-  <span aria-hidden="true" class="theme-icon">◐</span><span class="theme-label">{locale === 'zh' ? '主题' : 'Theme'}</span>
+<button class="theme-toggle nav-control" type="button" aria-label={label} title={label}>
+  <span aria-hidden="true" class="theme-icon">◐</span>
 </button>
 <script>
-  const setupTheme = () => {
-    document.querySelectorAll<HTMLButtonElement>('.theme-toggle').forEach((button) => {
-      if (button.dataset.ready) return; button.dataset.ready = 'true';
-      const root = document.documentElement;
-      const media = matchMedia('(prefers-color-scheme: dark)');
-      const current = () => root.dataset.theme === 'dark' || root.dataset.theme === 'light' ? root.dataset.theme : (media.matches ? 'dark' : 'light');
-      const storedTheme = () => {
-        try { const value = localStorage.getItem('theme'); return value === 'light' || value === 'dark' ? value : null; } catch { return null; }
-      };
-      // 刷新/从往返缓存恢复时，确保页面主题与已保存的偏好一致
-      const sync = () => { const theme = storedTheme(); if (theme) root.dataset.theme = theme; };
-      sync(); addEventListener('pageshow', sync);
-      const commit = (theme: 'light' | 'dark') => {
-        root.dataset.theme = theme;
-        try { localStorage.setItem('theme', theme); } catch {}
-        document.dispatchEvent(new CustomEvent('themechange', { detail: theme }));
-      };
-      const apply = (theme: 'light' | 'dark') => {
-        // 支持时用 View Transition 做整页交叉淡化，否则短暂启用颜色过渡作为兜底
-        const smooth = 'startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (smooth) {
-          (document as Document & { startViewTransition: (cb: () => void) => unknown }).startViewTransition(() => commit(theme));
-        } else {
-          root.classList.add('theme-anim');
-          commit(theme);
-          setTimeout(() => root.classList.remove('theme-anim'), 380);
-        }
-      };
-      button.addEventListener('click', () => apply(current() === 'dark' ? 'light' : 'dark'));
+  const button = document.querySelector<HTMLButtonElement>('.theme-toggle');
+  if (button) {
+    const root = document.documentElement;
+    const system = matchMedia('(prefers-color-scheme: dark)');
+    const motion = matchMedia('(prefers-reduced-motion: reduce)');
+    let fadeTimer: number | undefined;
+    const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : system.matches;
+    const sync = () => button.setAttribute('aria-pressed', String(isDark()));
+    const restore = () => {
+      try {
+        const stored = localStorage.getItem('theme');
+        if (stored === 'light' || stored === 'dark') root.dataset.theme = stored;
+      } catch {}
+      sync();
+    };
+    const commit = (theme: 'light' | 'dark') => {
+      root.dataset.theme = theme;
+      try { localStorage.setItem('theme', theme); } catch {}
+      sync();
+      document.dispatchEvent(new CustomEvent('themechange', { detail: theme }));
+    };
+
+    restore();
+    addEventListener('pageshow', restore);
+    system.addEventListener('change', sync);
+    button.addEventListener('click', () => {
+      const theme = isDark() ? 'light' : 'dark';
+      if (motion.matches) {
+        commit(theme);
+        return;
+      }
+      if (!document.startViewTransition) {
+        root.classList.add('theme-fade');
+        commit(theme);
+        clearTimeout(fadeTimer);
+        fadeTimer = window.setTimeout(() => root.classList.remove('theme-fade'), 290);
+        return;
+      }
+      if (root.hasAttribute('data-theme-motion')) return;
+      root.dataset.themeMotion = '';
+      const transition = document.startViewTransition(() => commit(theme));
+      const finish = () => { delete root.dataset.themeMotion; };
+      void transition.finished.then(finish, finish);
     });
-  };
-  setupTheme(); document.addEventListener('astro:after-swap', setupTheme);
+  }
 </script>
 <style>
-  .theme-toggle { display:inline-flex; align-items:center; gap:.42rem; min-height:2.4rem; padding:.45rem .7rem; border:0; border-radius:999px; background:transparent; cursor:pointer; font-size:.82rem; }
-  .theme-toggle:hover { background:var(--color-accent-soft); }
-  .theme-icon { font-size:1.05rem; line-height:1; }
-  @media(max-width:900px){.theme-label{display:none}}
+  .theme-toggle{padding:0;border:0;background-color:transparent;cursor:pointer}
+  .theme-icon{display:block;font-size:1.16rem;line-height:1;transition:rotate .38s var(--ease-out)}
+  .theme-toggle[aria-pressed="true"] .theme-icon{rotate:180deg}
 </style>

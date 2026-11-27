@@ -45,7 +45,11 @@ content:
       - { name: institution, label: Institution (Chinese), type: string }
       - { name: institutionEn, label: Institution (English, auto-generated), type: string, hidden: true }
       - name: avatar
-        label: Portrait
+        label: Homepage cover
+        type: image
+        options: { media: images }
+      - name: aboutPortrait
+        label: About page portrait
         type: image
         options: { media: images }
       - name: cv
@@ -250,6 +254,7 @@ content:
 
   - name: photos
     label: Photography
+    description: "大图请先在 https://lichang-zzu.github.io/photo-prep/ 压缩，再逐张上传。"
     type: collection
     path: src/content/photos
     format: yaml-frontmatter
@@ -262,13 +267,18 @@ content:
       default: { sort: date, order: desc }
     fields:
       - { name: title, label: Title, type: string, required: true }
-      - { name: image, label: Photo, type: image, options: { media: images }, required: true }
-      - { name: date, label: Date, type: date, required: true }
+      - { name: image, label: Photo, type: image, options: { media: images }, required: true, description: "大图压缩入口：https://lichang-zzu.github.io/photo-prep/" }
+      - { name: titleEn, label: English title, type: string }
+      - { name: alt, label: Image description for screen readers, type: string }
+      - { name: altEn, label: English image description, type: string }
+      - { name: date, label: Date taken, type: date }
       - { name: location, label: Location, type: string }
+      - { name: locationEn, label: Location in English, type: string }
       - { name: caption, label: Caption, type: text }
+      - { name: captionEn, label: English caption, type: text }
       - { name: tags, label: Tags, type: string, list: true }
-      - { name: compress, label: Compress automatically, type: boolean, default: true }
-      - { name: maxSize, label: Max file size (MB), type: select, default: "1", options: { values: ["0.3", "0.5", "1", "2", "3"] } }
+      - { name: compress, label: Optimize the published full-size view, type: boolean, default: true }
+      - { name: maxSize, label: Published full-size limit (MB), type: select, default: "1", options: { values: ["0.1", "0.3", "0.5", "1", "2", "3", "5"] } }
       - { name: featured, label: Featured, type: boolean, default: false }
       - { name: draft, label: Draft, type: boolean, default: false }
 

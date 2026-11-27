@@ -1,0 +1,153 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+<BaseLayout title="摄影上传助手" description="在上传 Pages CMS 前批量压缩照片。" locale="zh" translationPath="/" noindex>
+  <header class="page-head" data-pagefind-ignore>
+    <div class="container">
+      <h1>摄影上传助手</h1>
+      <p>选中或拖入原图，下载压缩后的 JPEG，再到 <a href="https://app.pagescms.org/" target="_blank" rel="noopener">Pages CMS</a> 的 Photography 栏目逐张上传。</p>
+    </div>
+  </header>
+  <section class="section container prep" data-pagefind-ignore aria-label="批量压缩照片">
+    <div class="drop-area" data-drop>
+      <label class="button primary" for="photo-files">选择照片</label>
+      <input id="photo-files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,.heic,.heif" />
+      <p>可一次选择多张。照片在当前浏览器内处理，每张压缩到 1 MB 以下。</p>
+    </div>
+    <p class="prep-status" role="status"></p>
+    <ul class="prep-results"></ul>
+    <noscript><p>请启用 JavaScript 后再压缩照片。</p></noscript>
+  </section>
+</BaseLayout>
+<script>
+  const input = document.querySelector<HTMLInputElement>('#photo-files')!;
+  const drop = document.querySelector<HTMLElement>('[data-drop]')!;
+  const status = document.querySelector('.prep-status')!;
+  const results = document.querySelector('.prep-results')!;
+  const queue: Array<{ file: File; detail: HTMLElement; item: HTMLLIElement }> = [];
+  const targetBytes = 1_000_000;
+  let processing = false;
+
+  async function compress(file: File) {
+    let image: ImageBitmap;
+    try {
+      image = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch {
+      throw new Error('浏览器无法读取这张图片。请先导出为 JPEG、PNG 或 WebP 后重试。');
+    }
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d', { alpha: false });
+    if (!context) { image.close(); throw new Error('浏览器无法启动图像处理。'); }
+
+    try {
+      const originalEdge = Math.max(image.width, image.height);
+      let edge = Math.min(2560, originalEdge);
+      while (edge > 0) {
+        const scale = edge / originalEdge;
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        context.imageSmoothingQuality = 'high';
+        context.fillStyle = '#fff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        for (const quality of [.9, .82, .72, .62, .52]) {
+          const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+          if (blob?.type === 'image/jpeg' && blob.size <= targetBytes) return blob;
+        }
+        edge = Math.floor(edge * .78);
+      }
+      throw new Error('这张照片无法编码为 JPEG，请尝试重新导出。');
+    } finally {
+      image.close();
+      canvas.width = canvas.height = 0;
+    }
+  }
+
+  function size(bytes: number) {
+    return bytes >= 1_000_000 ? `${(bytes / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1000))} KB`;
+  }
+
+  async function runQueue() {
+    if (processing) return;
+    processing = true;
+    let successes = 0;
+    let failures = 0;
+    while (queue.length) {
+      const { file, detail, item } = queue.shift()!;
+      detail.textContent = '正在压缩…';
+      status.textContent = `正在处理 ${file.name}，剩余 ${queue.length} 张`;
+      try {
+        const blob = await compress(file);
+        const url = URL.createObjectURL(blob);
+        const preview = document.createElement('img');
+        preview.src = url;
+        preview.alt = '';
+        preview.className = 'prep-thumb';
+        item.prepend(preview);
+        const download = document.createElement('a');
+        download.href = url;
+        const stem = file.name.replace(/\.[^.]+$/, '') || 'photo';
+        download.download = `${stem}-${Math.random().toString(36).slice(2, 9)}.jpg`;
+        download.textContent = '下载';
+        download.setAttribute('aria-label', `下载 ${file.name} 的压缩版`);
+        download.className = 'button secondary';
+        item.append(download);
+        detail.textContent = `${size(file.size)} → ${size(blob.size)}`;
+        successes += 1;
+      } catch (error) {
+        detail.textContent = error instanceof Error ? error.message : '处理失败，请重新选择照片。';
+        failures += 1;
+      }
+    }
+    status.textContent = failures ? `已完成 ${successes} 张，${failures} 张处理失败。` : `已完成 ${successes} 张，可以下载。`;
+    processing = false;
+  }
+
+  function addFiles(files: FileList | null) {
+    for (const file of files ?? []) {
+      const item = document.createElement('li');
+      const copy = document.createElement('div');
+      const name = document.createElement('strong');
+      const detail = document.createElement('span');
+      name.textContent = file.name;
+      detail.textContent = '等待压缩';
+      copy.append(name, detail);
+      item.append(copy);
+      results.append(item);
+      queue.push({ file, item, detail });
+    }
+    if (queue.length) void runQueue();
+  }
+
+  input.addEventListener('change', () => {
+    addFiles(input.files);
+    input.value = '';
+  });
+  drop.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    drop.classList.add('is-dragging');
+  });
+  drop.addEventListener('dragleave', (event) => {
+    if (event.relatedTarget instanceof Node && drop.contains(event.relatedTarget)) return;
+    drop.classList.remove('is-dragging');
+  });
+  drop.addEventListener('drop', (event) => {
+    event.preventDefault();
+    drop.classList.remove('is-dragging');
+    addFiles(event.dataTransfer?.files ?? null);
+  });
+</script>
+<style>
+  .prep{padding-top:2rem}
+  .drop-area{position:relative;display:grid;place-items:center;padding:clamp(2rem,6vw,4rem) 1rem;border:1px dashed var(--color-accent);border-radius:var(--radius-lg);background:var(--color-surface);text-align:center}
+  .drop-area.is-dragging{background:var(--color-accent-soft)}
+  .drop-area label{cursor:pointer}
+  .drop-area input{position:absolute;width:1px;height:1px;clip-path:inset(50%)}
+  .drop-area:focus-within label{outline:2px solid var(--color-accent);outline-offset:4px}
+  .drop-area p,.prep-status{margin:1rem 0 0;color:var(--color-muted)}
+  .prep-results{display:grid;gap:.65rem;margin:1.1rem 0 0;padding:0;list-style:none}
+  .prep-results :global(li){display:flex;align-items:center;gap:1rem;padding:1rem;border-radius:var(--radius-md);background:var(--color-surface)}
+  .prep-results :global(li div){display:grid;gap:.25rem;flex:1;min-width:0;overflow-wrap:anywhere}
+  .prep-results :global(li span){color:var(--color-muted);font-size:var(--text-sm)}
+  .prep-results :global(img){width:3.5rem;height:3.5rem;object-fit:cover;border-radius:var(--radius-sm)}
+</style>

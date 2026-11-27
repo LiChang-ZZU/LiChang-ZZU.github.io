@@ -1,27 +1,49 @@
 ---
+import type { CollectionEntry } from 'astro:content';
 import site from '@/data/site';
 import type { Locale } from '@/types';
 import { assetUrl, getLocalizedPath } from '@/utils/urls';
-interface Props { locale: Locale }
-const { locale } = Astro.props;
-const name = locale === 'zh' ? site.name : site.nameEn;
+import { photoImage, photoText } from '@/utils/photos';
+
+interface Props {
+  locale: Locale;
+  cover?: CollectionEntry<'photos'>;
+}
+const { locale, cover } = Astro.props;
+const zh = locale === 'zh';
+const image = cover && photoImage(cover.data.image, cover.data.maxSize, cover.data.compress);
 ---
-<section class="hero container">
-  <div class="hero-copy">
-    <p class="hero-kicker" data-reveal="fade">{locale === 'zh' ? site.title : site.titleEn}</p>
-    <h1 data-reveal="fade-up"><span>{name}</span>{locale === 'zh' && site.name !== site.nameEn && <small lang="en">{site.nameEn}</small>}</h1>
-    <p class="hero-bio" data-reveal="fade-up">{locale === 'zh' ? site.bio : site.bioEn}</p>
-    <div class="hero-actions" data-reveal="fade-up">
-      <a class="button" href={getLocalizedPath(locale, '/research/')}>{locale === 'zh' ? '查看研究' : 'View research'}</a>
-      <a class="button secondary" href={getLocalizedPath(locale, '/about/')}>{locale === 'zh' ? '关于我' : 'About me'}</a>
+<section class="hero">
+  <div class="hero-copy copy-container">
+    <h1>{zh ? site.name : site.nameEn}</h1>
+    <p class="hero-role">{zh ? site.title : site.titleEn}</p>
+    <p class="hero-bio">{zh ? site.bio : site.bioEn}</p>
+    <div class="hero-actions">
+      <a class="button primary" href={getLocalizedPath(locale, '/research/')}>{zh ? '查看研究' : 'Explore research'}</a>
+      <a class="button secondary" href={getLocalizedPath(locale, '/about/')}>{zh ? '关于我' : 'About me'}</a>
     </div>
   </div>
-  <figure class="portrait-wrap" data-reveal="scale">
-    <div class="portrait-frame"><img src={assetUrl(site.avatar)} alt={locale === 'zh' ? `${site.name} 的个人照片` : `Portrait of ${site.nameEn}`} width="960" height="1200" fetchpriority="high" /></div>
-    <figcaption>{locale === 'zh' ? site.institution : site.institutionEn}</figcaption>
-  </figure>
+  {site.avatar && <figure class="hero-cover">
+    <img src={assetUrl(image?.src ?? site.avatar)} srcset={image?.srcset}
+      sizes="100vw" alt={cover ? photoText(cover.data, locale).alt : ''}
+      width={image?.width || undefined} height={image?.height || undefined} fetchpriority="high" />
+  </figure>}
 </section>
 <style>
-  .hero{min-height:100svh;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(18rem,.65fr);align-items:center;gap:clamp(2rem,7vw,8rem);padding-top:calc(var(--nav-height) + 3rem);padding-bottom:3rem}.hero-kicker{margin:0 0 1.2rem;color:var(--color-muted);font-weight:600}.hero h1{margin:0;line-height:.85;letter-spacing:-.075em}.hero h1 span{display:block;font-size:var(--text-display);font-weight:720}.hero h1 small{display:block;margin-top:1.3rem;font-size:clamp(1.25rem,2.5vw,2.3rem);font-weight:500;letter-spacing:-.04em}.hero-bio{max-width:38rem;margin:2.2rem 0 0;color:var(--color-muted);font-size:var(--text-lg);line-height:1.55}.hero-actions{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:2rem}.portrait-wrap{margin:0;align-self:end;padding-bottom:clamp(1rem,6vh,5rem)}.portrait-frame{position:relative;overflow:hidden;aspect-ratio:4/5;border-radius:clamp(.8rem,2vw,1.6rem);background:linear-gradient(150deg,var(--color-accent-soft),var(--color-surface));border:1px solid var(--color-line);box-shadow:var(--shadow-md)}.portrait-frame img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}.portrait-frame::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgb(255 255 255 / .16);pointer-events:none}:global(html[data-theme="dark"]) .portrait-frame img{filter:brightness(.93) contrast(1.03)}@media(prefers-color-scheme:dark){:global(html:not([data-theme])) .portrait-frame img{filter:brightness(.93) contrast(1.03)}}.portrait-wrap figcaption{margin-top:.75rem;color:var(--color-faint);font-size:var(--text-xs)}
-  @media(max-width:760px){.hero{min-height:auto;grid-template-columns:1fr;padding-top:8rem;padding-bottom:4rem;gap:3rem}.hero h1{line-height:.92}.portrait-wrap{width:82%;margin-left:auto;padding:0}.hero-bio{margin-top:1.6rem}}
+  .hero{display:grid;grid-template-rows:auto 1fr;background:var(--color-bg);color:var(--color-text)}
+  .hero-copy{text-align:center;padding-block:calc(var(--nav-height) + clamp(2.55rem,5vw,3.6rem)) clamp(1.6rem,3vw,2.1rem)}
+  .hero h1{margin:0;font-size:clamp(3.65rem,6.5vw,5.5rem);font-weight:720;line-height:1.01;letter-spacing:-.064em;text-wrap:balance}
+  .hero-role{margin:.63rem 0 0;font-size:clamp(1.16rem,.96rem + 1vw,1.7rem);font-weight:570;letter-spacing:-.025em;line-height:1.3;text-wrap:balance}
+  .hero-bio{max-width:36rem;margin:.58rem auto 0;color:var(--color-muted);font-size:var(--text-base);line-height:1.55;text-wrap:pretty}
+  .hero-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:.7rem;margin-top:1.2rem}
+  .hero-actions .secondary{--button-fill:transparent;--button-hover:var(--color-accent-soft);--button-text:var(--color-accent-strong);border-color:var(--color-accent);box-shadow:none}
+  .hero figure{position:relative;overflow:hidden;width:100%;height:clamp(22rem,40vw,36rem);margin:0;background:var(--color-surface)}
+  .hero figure::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(var(--color-bg),transparent clamp(1.75rem,5vw,4.5rem))}
+  .hero img{width:100%;height:100%;object-fit:cover;object-position:50% 74%}
+  @media(max-width:760px){
+    .hero-copy{padding-block:calc(var(--nav-height) + 2.55rem) 1.1rem}
+    .hero h1{font-size:clamp(3.15rem,12.5vw,4.75rem)}
+    .hero figure{height:auto;aspect-ratio:1.13}
+    .hero img{object-position:56% 60%}
+  }
 </style>

@@ -12,7 +12,7 @@ const types=[...new Set(pubs.map((p)=>p.data.type))];
 const years=[...new Set(pubs.map((p)=>p.data.year))];
 ---
 <BaseLayout title={locale==='zh'?'论文':'Publications'} description={locale==='zh'?'按年份整理的学术出版物。':'Academic publications organized by year.'} {locale}>
-  <header class="page-head"><div class="container"><p class="eyebrow">{locale==='zh'?'研究成果':'Research output'}</p><h1>{locale==='zh'?'论文':'Publications'}</h1><p>{locale==='zh'?'按年份倒序浏览，并可按照出版类型筛选。':'Browse in reverse chronological order or filter by publication type.'}</p></div></header>
+  <header class="page-head"><div class="container"><h1>{locale==='zh'?'论文':'Publications'}</h1><p>{locale==='zh'?'按年份倒序浏览，并可按照出版类型筛选。':'Browse in reverse chronological order or filter by publication type.'}</p></div></header>
   <section class="section container" data-pagefind-body>
     {types.length>0&&<div class="filters" data-pagefind-ignore><button class="active" data-type="all">{locale==='zh'?'全部':'All'}</button>{types.map((type)=><button data-type={type}>{type}</button>)}</div>}
     <div class="pub-list">{pubs.length ? years.map((year)=><section class="year-group"><h2>{year}</h2><div class="pub-grid">{pubs.filter((publication)=>publication.data.year===year).map((publication)=><PublicationCard {publication} {locale} />)}</div></section>) : <p class="empty-state">{locale==='zh'?'论文列表尚未发布。':'No publications have been published yet.'}</p>}</div>

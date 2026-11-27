@@ -1,81 +1,158 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
-import { getCollection } from 'astro:content';
 import type { Locale } from '@/types';
 import { assetUrl } from '@/utils/urls';
+import { getPhotos, photoImage, photoText } from '@/utils/photos';
 interface Props { locale: Locale }
 const { locale } = Astro.props;
-type Derivative = { src: string; width: number; height: number };
-let manifest: Record<string, Derivative> = {};
-try { manifest = JSON.parse(fs.readFileSync(path.join(process.cwd(), '.photo-manifest.json'), 'utf8')); } catch {}
-const imageOf = (image: string) => manifest[image] ?? { src: image, width: 0, height: 0 };
-const photos = (await getCollection('photos', ({ data }) => !data.draft))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-const fmt = (date: Date) => new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-GB', { year: 'numeric', month: '2-digit' }).format(date).replace(/\//g, '.');
+const zh = locale === 'zh';
+const photos = await getPhotos();
+const formatDate = new Intl.DateTimeFormat(zh ? 'zh-CN' : 'en-GB', {
+  year: 'numeric', month: 'long', timeZone: 'UTC',
+});
 ---
-{photos.length ? (
-  <>
-    <div class="photo-grid">
-      {photos.map((photo) => (
-        <figure class="photo-item">
-          <button type="button" class="photo-trigger" data-full={assetUrl(imageOf(photo.data.image).src)} data-title={photo.data.title} aria-label={photo.data.title}>
-            <img src={assetUrl(imageOf(photo.data.image).src)} alt={photo.data.title} width={imageOf(photo.data.image).width || undefined} height={imageOf(photo.data.image).height || undefined} loading="lazy" decoding="async" />
-          </button>
+{photos.length > 0 ? (
+  <div data-gallery>
+    <div class:list={['photo-grid', { 'single-photo': photos.length === 1 }]}>
+      {photos.map(({ data }, index) => {
+        const image = photoImage(data.image, data.maxSize, data.compress);
+        const copy = photoText(data, locale);
+        const date = data.date ? formatDate.format(data.date) : '';
+        return <figure class="photo-item" data-reveal="fade-up">
+          <a class="photo-trigger pressable" href={assetUrl(image.full)} aria-label={zh ? `查看大图：${copy.title}` : `Enlarge ${copy.title}`}>
+            <img src={assetUrl(image.src)} srcset={image.srcset}
+              sizes={photos.length === 1 ? '(max-width: 900px) 95vw, 900px' : '(max-width: 580px) 93vw, (max-width: 920px) 45vw, 360px'}
+              alt={copy.alt} width={image.width || undefined} height={image.height || undefined}
+              loading={index === 0 ? 'eager' : 'lazy'} decoding="async" />
+          </a>
           <figcaption>
-            <span class="photo-title">{photo.data.title}</span>
-            <span class="photo-meta">{[photo.data.location, fmt(photo.data.date)].filter(Boolean).join(' · ')}</span>
-            {photo.data.caption && <span class="photo-caption">{photo.data.caption}</span>}
+            <span class="photo-title">{copy.title}</span>
+            {(copy.location || date) && <span class="photo-meta">{[copy.location, date].filter(Boolean).join(' · ')}</span>}
+            {copy.caption && <span class="photo-caption">{copy.caption}</span>}
           </figcaption>
-        </figure>
-      ))}
+        </figure>;
+      })}
     </div>
-    <dialog class="photo-dialog" aria-label={locale === 'zh' ? '作品预览' : 'Photo preview'}><button type="button" class="photo-close" aria-label={locale === 'zh' ? '关闭' : 'Close'}>×</button><img alt="" /><p></p></dialog>
-    <script>
-      const setupLightbox = () => {
-        const dialog = document.querySelector<HTMLDialogElement>('.photo-dialog');
-        if (!dialog || dialog.dataset.ready) return;
-        dialog.dataset.ready = 'true';
-        const img = dialog.querySelector('img')!;
-        const caption = dialog.querySelector('p')!;
-        document.querySelectorAll<HTMLButtonElement>('.photo-trigger').forEach((trigger) => {
-          trigger.addEventListener('click', () => {
-            img.src = trigger.dataset.full ?? '';
-            img.alt = trigger.dataset.title ?? '';
-            caption.textContent = trigger.dataset.title ?? '';
-            dialog.showModal();
-          });
-        });
-        dialog.addEventListener('click', (event) => {
-          if (event.target === dialog || (event.target as HTMLElement).closest('.photo-close')) dialog.close();
-        });
-      };
-      setupLightbox(); document.addEventListener('astro:after-swap', setupLightbox);
-    </script>
-  </>
-) : (
-  <div class="gallery-empty">
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.2l1.1-1.8A1.5 1.5 0 0 1 9.1 3.5h5.8a1.5 1.5 0 0 1 1.3.7L17.3 6h1.2A2.5 2.5 0 0 1 21 8.5v9A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5v-9Z"/><circle cx="12" cy="13" r="3.6"/></svg>
-    <p>{locale === 'zh' ? '摄影作品整理中，敬请期待。' : 'Photographs are being curated — coming soon.'}</p>
+    <dialog class="photo-dialog glass-surface motion-dialog" aria-label={zh ? '摄影作品预览' : 'Photograph preview'}>
+      <div class="viewer">
+        <div class="viewer-header">
+          {photos.length > 1 && <span class="photo-count" aria-live="polite"></span>}
+          <button type="button" class="photo-close icon-button" data-photo-close aria-label={zh ? '关闭' : 'Close'} autofocus>×</button>
+        </div>
+        <div class="viewer-stage">
+          <img alt="" />
+          <p class="photo-error" hidden>{zh ? '图片暂时无法加载。' : 'This photo could not be loaded.'}</p>
+        </div>
+        <div class="viewer-footer">
+          <div class="viewer-caption" aria-live="polite"></div>
+          {photos.length > 1 && <div class="viewer-controls">
+            <button type="button" class="icon-button" data-photo-step="-1" aria-label={zh ? '上一张' : 'Previous photo'}>‹</button>
+            <button type="button" class="icon-button" data-photo-step="1" aria-label={zh ? '下一张' : 'Next photo'}>›</button>
+          </div>}
+        </div>
+      </div>
+    </dialog>
   </div>
+) : (
+  <p class="empty-state">{zh ? '相册暂无作品。' : 'No photographs yet.'}</p>
 )}
+<script>
+  for (const gallery of document.querySelectorAll<HTMLElement>('[data-gallery]')) {
+    const dialog = gallery.querySelector('dialog')!;
+    const image = dialog.querySelector('img')!;
+    const stage = dialog.querySelector<HTMLElement>('.viewer-stage')!;
+    const caption = dialog.querySelector('.viewer-caption')!;
+    const error = dialog.querySelector<HTMLElement>('.photo-error')!;
+    const count = dialog.querySelector('.photo-count');
+    const motion = matchMedia('(prefers-reduced-motion: reduce)');
+    const triggers = [...gallery.querySelectorAll<HTMLAnchorElement>('.photo-trigger')];
+    let index = 0;
+    let opener: HTMLAnchorElement;
+    let startX = 0;
+    let startY = 0;
+    image.draggable = false;
+    const show = (next: number) => {
+      const direction = dialog.open ? Math.sign(next - index) : 0;
+      index = (next + triggers.length) % triggers.length;
+      const trigger = triggers[index];
+      if (!trigger) return;
+      caption.replaceChildren(...[...trigger.closest('figure')!.querySelector('figcaption')!.children].map((item) => item.cloneNode(true)));
+      if (count) count.textContent = `${index + 1} / ${triggers.length}`;
+      image.alt = trigger.querySelector('img')!.alt;
+      error.hidden = true;
+      image.hidden = false;
+      image.src = trigger.href;
+      if (motion.matches || !direction) return;
+      const src = image.src;
+      void image.decode().then(() => {
+        if (image.src !== src || !dialog.open || motion.matches) return;
+        image.getAnimations().forEach((animation) => animation.cancel());
+        image.animate(
+          [{ opacity: .5, translate: `${direction * 9}px 0` }, { opacity: 1, translate: '0 0' }],
+          { duration: 300, easing: 'cubic-bezier(.22,1,.36,1)' },
+        );
+      }, () => {});
+    };
+    for (const [i, trigger] of triggers.entries()) {
+      trigger.addEventListener('click', (event) => {
+        if (!dialog.showModal || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        opener = trigger;
+        show(i);
+        dialog.showModal();
+      });
+    }
+    image.addEventListener('error', () => { image.hidden = true; error.hidden = false; });
+    dialog.querySelector('[data-photo-close]')!.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => opener?.focus());
+    dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+    for (const button of dialog.querySelectorAll<HTMLButtonElement>('[data-photo-step]')) {
+      button.addEventListener('click', () => show(index + Number(button.dataset.photoStep)));
+    }
+    if (triggers.length < 2) continue;
+    dialog.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      show(index + (event.key === 'ArrowLeft' ? -1 : 1));
+    });
+    stage.addEventListener('touchstart', (event) => {
+      const touch = event.touches.item(0);
+      if (!touch) return;
+      startX = touch.clientX;
+      startY = touch.clientY;
+    }, { passive: true });
+    stage.addEventListener('touchend', (event) => {
+      const touch = event.changedTouches.item(0);
+      if (!touch) return;
+      const dx = touch.clientX - startX;
+      const dy = touch.clientY - startY;
+      if (Math.abs(dx) > 46 && Math.abs(dx) > Math.abs(dy) * 1.4) show(index + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+  }
+</script>
 <style>
-  .photo-grid { columns: 3; column-gap: 1.4rem; }
-  .photo-item { margin: 0 0 1.4rem; break-inside: avoid; }
-  .photo-trigger { display: block; width: 100%; padding: 0; border: 0; border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface); cursor: zoom-in; }
-  .photo-trigger img { display: block; width: 100%; height: auto; transition: transform .5s cubic-bezier(.22,1,.36,1), opacity var(--transition-base); }
-  .photo-trigger:hover img { transform: scale(1.025); opacity: .95; }
-  .photo-item figcaption { display: flex; flex-direction: column; gap: .18rem; margin-top: .7rem; }
-  .photo-title { font-size: var(--text-sm); font-weight: 600; }
-  .photo-meta { color: var(--color-faint); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
-  .photo-caption { color: var(--color-muted); font-size: .8rem; line-height: 1.5; }
-  .photo-dialog { max-width: min(92vw, 68rem); max-height: 90vh; padding: 0; border: 1px solid var(--color-line); border-radius: var(--radius-md); background: var(--color-surface); overflow: hidden; }
-  .photo-dialog::backdrop { background: rgb(0 0 0 / .72); backdrop-filter: blur(6px); }
-  .photo-dialog img { display: block; max-width: 100%; max-height: 80vh; margin: 0 auto; object-fit: contain; }
-  .photo-dialog p { margin: 0; padding: .8rem 1rem 1rem; color: var(--color-muted); font-size: var(--text-sm); text-align: center; }
-  .photo-close { position: absolute; z-index: 1; top: .6rem; right: .6rem; width: 2.2rem; height: 2.2rem; border: 0; border-radius: 50%; background: rgb(0 0 0 / .55); color: #fff; font-size: 1.1rem; line-height: 1; cursor: pointer; }
-  .gallery-empty { display: flex; flex-direction: column; align-items: center; gap: .8rem; padding: clamp(3rem, 10vw, 6rem) 1rem; border: 1px dashed var(--color-line); border-radius: var(--radius-md); color: var(--color-faint); text-align: center; }
-  .gallery-empty p { margin: 0; font-size: var(--text-sm); }
-  @media (max-width: 900px) { .photo-grid { columns: 2; } }
-  @media (max-width: 560px) { .photo-grid { columns: 1; } }
+  .photo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(1rem,2.5vw,1.8rem)}
+  .photo-grid.single-photo{grid-template-columns:minmax(0,56rem)}
+  .photo-item{min-width:0;margin:0}
+  .photo-trigger{position:relative;display:block;overflow:hidden;border-radius:var(--radius-lg);background:var(--color-surface);cursor:zoom-in}
+  .photo-trigger img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;transition:transform .6s var(--ease-out)}
+  .single-photo img{aspect-ratio:auto;max-height:68vh;object-fit:contain;background:var(--color-surface)}
+  @media(hover:hover){.photo-trigger:hover img{transform:scale(1.025)}}
+  figcaption,.viewer-caption{display:flex;flex-direction:column;gap:.2rem;margin-top:.8rem}
+  .photo-title{font-size:var(--text-base);font-weight:650}
+  .photo-meta,.photo-caption{color:var(--color-muted);font-size:var(--text-sm)}
+  .photo-dialog{--color-surface:#121718;--glass-fill:rgb(20 26 27 / .84);--glass-sheen:rgb(255 255 255 / .095);--glass-rim:rgb(255 255 255 / .18);width:min(94vw,76rem);max-height:94dvh;padding:0;overflow:auto;overscroll-behavior:contain;border-radius:var(--radius-lg);color:#fff}
+  .photo-dialog::backdrop{background:rgb(8 14 16 / .82);backdrop-filter:blur(var(--glass-blur))}
+  .viewer-header,.viewer-footer{display:flex;justify-content:space-between;align-items:center;gap:.65rem;padding:.65rem 1rem}
+  .viewer-header{justify-content:flex-end}
+  .photo-count{margin-right:auto;color:#d1dcdf;font-size:var(--text-sm);font-variant-numeric:tabular-nums}
+  .viewer-stage{display:grid;min-height:min(33vh,15rem);place-items:center;background:#080a0b;touch-action:pan-y}
+  .viewer-stage img{width:auto;max-width:100%;max-height:70dvh;object-fit:contain}
+  .viewer-stage img[hidden]{display:none}
+  .viewer-caption{margin:0;color:#fff}
+  .viewer-caption :global(.photo-meta),.viewer-caption :global(.photo-caption){color:#d1dcdf}
+  .viewer-controls{display:flex;gap:.5rem}
+  .viewer button{flex:none;display:grid;place-items:center;width:2.75rem;height:2.75rem;padding:0;border:1px solid rgb(255 255 255 / .2);border-radius:50%;background:#222a2d;color:#fff;font-size:1.6rem;line-height:1;cursor:pointer}
+  .viewer button:hover{background:#37454a}
+  @media(max-width:920px){.photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:580px){.photo-grid{grid-template-columns:minmax(0,1fr)}}
 </style>

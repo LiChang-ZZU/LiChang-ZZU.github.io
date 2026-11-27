@@ -1,0 +1,19 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import InterestGallery from './InterestGallery.astro';
+import site from '@/data/site';
+import type { Locale } from '@/types';
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const zh = locale === 'zh';
+---
+<BaseLayout title={zh ? '兴趣' : 'Interests'} description={zh ? `${site.name}的摄影作品。` : `Photographs by ${site.nameEn}.`} {locale}>
+  <header class="page-head">
+    <div class="container">
+      <h1>{zh ? '摄影' : 'Photography'}</h1>
+    </div>
+  </header>
+  <section class="section container" id="photography" data-pagefind-body aria-label={zh ? '相册' : 'Photo gallery'}>
+    <InterestGallery {locale} />
+  </section>
+</BaseLayout>

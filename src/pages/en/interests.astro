@@ -1,18 +1,4 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro';
-import InterestGallery from '@/components/InterestGallery.astro';
-import WritingList from '@/components/WritingList.astro';
+import InterestsPage from '@/components/InterestsPage.astro';
 ---
-<BaseLayout title="Interests" description="Photography and essays." locale="en">
-  <header class="page-head"><div class="container"><p class="eyebrow" data-reveal="fade">Interests</p><h1 data-reveal="fade-up">Lens &amp; Letters</h1><p data-reveal="fade-up" style="--stagger:1">Photography records light and everyday life; writing sorts out the traces of thought.</p></div></header>
-  <section class="section" id="photography"><div class="container">
-    <div class="row-head" data-reveal="fade"><div><p class="eyebrow">Photography</p><h2>Photographs</h2></div></div>
-    <InterestGallery locale="en" />
-  </div></section>
-  <WritingList locale="en" />
-</BaseLayout>
-<style>
-  .row-head{margin-bottom:1.6rem}
-  .row-head h2{margin:0;font-size:var(--text-2xl);letter-spacing:-.045em;line-height:1.05}
-  .row-head .eyebrow{margin-bottom:.7rem}
-</style>
+<InterestsPage locale="en" />

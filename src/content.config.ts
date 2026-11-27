@@ -52,8 +52,10 @@ const news = defineCollection({
 const photos = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/photos', generateId: pathId }),
   schema: z.object({
-    title: z.string(), date: z.coerce.date(), image: z.string(), location: z.string().default(''),
-    caption: z.string().default(''), tags: z.array(z.string()).default([]),
+    title: z.string(), titleEn: z.string().default(''), date: optionalDate, image: z.string(),
+    alt: z.string().default(''), altEn: z.string().default(''),
+    location: z.string().default(''), locationEn: z.string().default(''),
+    caption: z.string().default(''), captionEn: z.string().default(''), tags: z.array(z.string()).default([]),
     featured: z.boolean().default(false), draft: z.boolean().default(false),
     compress: z.boolean().default(true), maxSize: z.coerce.number().min(0.1).max(5).default(1)
   })

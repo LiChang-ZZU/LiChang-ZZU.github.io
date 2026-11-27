@@ -30,7 +30,21 @@ const {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
-    <script is:inline>document.documentElement.classList.add('js');try{const t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch{}</script>
+    <link rel="expect" href="#main-content" blocking="render" />
+    <script is:inline>
+      try {
+        const theme = localStorage.getItem('theme');
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+      } catch {}
+      addEventListener('pagereveal', (event) => {
+        if (!event.viewTransition) return;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          event.viewTransition.skipTransition();
+          return;
+        }
+        document.documentElement.dataset.routeMotion = '';
+      });
+    </script>
     <SEO {...{ title, description, locale, image, type, publishedTime, updatedTime, noindex, translationPath, canonicalOverride }} />
   </head>
   <body>
@@ -41,24 +55,20 @@ const {
     <BackToTop {locale} />
     <LiveChat />
     <script>
-      const setupReveal = () => {
-        const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (!reduce) {
-          const targets = 'main .page-head .container > *, main .article-head > *, main .section > .container > *';
-          document.querySelectorAll<HTMLElement>(targets).forEach((el, index) => {
-            if (el.hasAttribute('data-reveal')) return;
-            el.setAttribute('data-reveal', 'fade-up');
-            if (!el.style.getPropertyValue('--stagger')) el.style.setProperty('--stagger', String(Math.min(index, 4)));
-          });
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            entry.target.classList.add('is-revealed');
+            observer.unobserve(entry.target);
+          }
+        }, { threshold: 0, rootMargin: '0px 0px -4% 0px' });
+        for (const target of document.querySelectorAll<HTMLElement>('[data-reveal]')) {
+          if (target.getBoundingClientRect().top < innerHeight) continue;
+          target.classList.add('is-pending');
+          observer.observe(target);
         }
-        const els = document.querySelectorAll<HTMLElement>('[data-reveal]');
-        if (!('IntersectionObserver' in window)) { els.forEach((el) => el.classList.add('is-revealed')); return; }
-        const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
-          if (entry.isIntersecting) { entry.target.classList.add('is-revealed'); observer.unobserve(entry.target); }
-        }), { threshold: .12, rootMargin: '0px 0px -5% 0px' });
-        els.forEach((el) => observer.observe(el));
-      };
-      setupReveal(); document.addEventListener('astro:after-swap', setupReveal);
+      }
     </script>
   </body>
 </html>

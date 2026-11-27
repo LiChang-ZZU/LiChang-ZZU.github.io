@@ -51,14 +51,29 @@ slug 是网址中的英文短名，只用小写字母、数字和连字符，例
 
 ## 上传与更换照片
 
-在 Site Settings 的 Portrait 字段上传图片，文件会保存到 `public/uploads/`。建议：
+在 **Site Settings** 的 **Homepage cover** 更换首页封面，在 **About page portrait** 更换「关于我」的肖像。文件会保存到 `public/uploads/`。建议：
 
-- 使用竖版、光线清晰的照片；
+- 首页封面使用横图，肖像使用竖图；
 - 上传前压缩文件；
 - 尽量使用 JPG、PNG 或 WebP；
 - 填写图片说明时描述画面，不要写“图片”。
 
 博客和项目正文中插入的图片也会保存在同一媒体目录。
+
+### 发布摄影作品
+
+1. 打开[摄影上传助手](https://lichang-zzu.github.io/photo-prep/)，拖入或选择照片。它会在浏览器中逐张处理，输出不超过 1 MB 的 JPEG，并显示预览和体积。
+2. 在 **Pages CMS → Photography → New** 逐张上传处理后的 JPEG。填写标题和画面描述，可选填拍摄日期、地点、说明和英文文案。浏览器无法读取 HEIC 时，先将原图导出为 JPEG 或 PNG，再拖入助手。
+3. 想让某张照片优先显示并用作首页相册封面，开启 **Featured**。核对后关闭 **Draft** 并保存。带日期的精选作品按拍摄日期倒序排列。
+
+**Optimize the published full-size view** 和 **Published full-size limit** 作用于网站构建时的大图。构建也会为相册生成不同宽度的预览图，让小屏幕加载合适大小的图片。
+
+也可以在本地仓库直接导入，跳过 CMS 的文件上传步骤。加上 `--no-commit` 便可先预览，再随网站改动一起提交。
+
+```powershell
+npm run photos:add -- "D:/Photos/forest.jpg" --title "林间" --alt "树荫下的小路" --date 2026-09-10 --no-commit
+npm run photos:add -- "D:/Photos/01.jpg" "D:/Photos/02.png" --draft --no-commit
+```
 
 ## 更换 CV
 

@@ -4,5 +4,10 @@ import { getLocalizedPath } from '@/utils/urls';
 interface Props { locale: Locale }
 const { locale } = Astro.props;
 ---
-<a class="search-button" href={getLocalizedPath(locale, '/search/')} aria-label={locale === 'zh' ? '站内搜索' : 'Search site'}><span aria-hidden="true">⌕</span><span>{locale === 'zh' ? '搜索' : 'Search'}</span></a>
-<style>.search-button{display:inline-flex;align-items:center;gap:.35rem;min-height:2.4rem;padding:.45rem .68rem;border-radius:999px;font-size:.82rem;text-decoration:none}.search-button:hover{background:var(--color-accent-soft)}.search-button span:first-child{font-size:1.25rem;line-height:1}@media(max-width:900px){.search-button span:last-child{display:none}}</style>
+<a class="search-button nav-control" href={getLocalizedPath(locale, '/search/')} aria-label={locale === 'zh' ? '站内搜索' : 'Search site'}>
+  <span class="search-icon" aria-hidden="true"></span>
+</a>
+<style>
+  .search-icon{position:relative;width:.75rem;height:.75rem;margin:-.1rem .1rem 0 0;border:1.5px solid currentColor;border-radius:50%}
+  .search-icon::after{content:"";position:absolute;width:.32rem;height:1.5px;right:-.26rem;bottom:-.12rem;background:currentColor;border-radius:2px;rotate:46deg}
+</style>

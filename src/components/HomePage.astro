@@ -5,85 +5,97 @@ import Hero from './Hero.astro';
 import SectionHeader from './SectionHeader.astro';
 import ProjectCard from './ProjectCard.astro';
 import PublicationCard from './PublicationCard.astro';
+import BibtexDialog from './BibtexDialog.astro';
 import NewsList from './NewsList.astro';
 import BlogCard from './BlogCard.astro';
 import site from '@/data/site';
 import type { Locale } from '@/types';
-import { getLocalizedPath } from '@/utils/urls';
+import { assetUrl, getLocalizedPath } from '@/utils/urls';
 import { isPublished, sortByDate } from '@/utils/content';
+import { getPhotos, photoText, photoImage } from '@/utils/photos';
 interface Props { locale: Locale }
 const { locale } = Astro.props;
-const [projectsRaw, pubsRaw, newsRaw, postsRaw] = await Promise.all([getCollection('projects'),getCollection('publications'),getCollection('news'),getCollection('blog')]);
-const projects = sortByDate(projectsRaw.filter((x)=>x.data.locale===locale&&x.data.featured&&isPublished(x))).slice(0,3);
-const publications = pubsRaw.filter((x)=>x.data.locale===locale&&x.data.featured&&isPublished(x)).sort((a,b)=>b.data.year-a.data.year).slice(0,4);
-const news = sortByDate(newsRaw.filter((x)=>x.data.locale===locale&&isPublished(x))).slice(0,5);
-const posts = sortByDate(postsRaw.filter((x)=>x.data.locale===locale&&isPublished(x))).slice(0,3);
-const interests = locale === 'zh' ? site.researchInterests : site.researchInterestsEn;
-const introduction = locale === 'zh'
-  ? interests.length
-    ? `我关注${interests.slice(0,2).join('、')}，并尝试用清晰、可复现的方法理解复杂问题。`
-    : '我使用清晰、可复现的方法探索重要的研究问题。'
-  : interests.length
-    ? `I work across ${interests.slice(0,2).join(' and ')}, using clear, reproducible methods to understand complex problems.`
-    : 'I use clear, reproducible methods to investigate important research questions.';
+const zh = locale === 'zh';
+const [projectsRaw, pubsRaw, newsRaw, postsRaw, photos] = await Promise.all([
+  getCollection('projects'), getCollection('publications'), getCollection('news'), getCollection('blog'), getPhotos()
+]);
+const projects = sortByDate(projectsRaw.filter((item) => item.data.locale === locale && item.data.featured && isPublished(item))).slice(0, 3);
+const publications = pubsRaw.filter((item) => item.data.locale === locale && item.data.featured && isPublished(item))
+  .sort((a, b) => b.data.year - a.data.year).slice(0, 4);
+const news = sortByDate(newsRaw.filter((item) => item.data.locale === locale && isPublished(item))).slice(0, 4);
+const posts = sortByDate(postsRaw.filter((item) => item.data.locale === locale && isPublished(item))).slice(0, 3);
+const topics = zh ? site.researchInterests : site.researchInterestsEn;
+const homepageCover = photos.find(({ data }) => data.image === site.avatar);
+const photo = photos.find(({ data }) => data.image !== site.avatar);
+const cover = photo && photoImage(photo.data.image, photo.data.maxSize, photo.data.compress);
 ---
 <BaseLayout {locale}>
   <div data-pagefind-body>
-  <Hero {locale} />
-  <section class="statement section">
-    <div class="container statement-grid">
-      <p class="eyebrow" data-reveal="fade">{locale === 'zh' ? '研究者简介' : 'Introduction'}</p>
-      <p class="statement-text" data-reveal="fade-up">{introduction}</p>
-      <a class="text-link" href={getLocalizedPath(locale,'/about/')} data-reveal="fade">{locale === 'zh' ? '了解更多' : 'Read more'}</a>
-    </div>
-  </section>
-  {interests.length > 0 && <section class="interests section">
-    <div class="container"><SectionHeader eyebrow={locale==='zh'?'方向':'Focus'} title={locale==='zh'?'研究兴趣':'Research interests'} /></div>
-    <div class="interest-list container">{interests.map((interest,index)=><div data-reveal="fade-up"><span>{String(index+1).padStart(2,'0')}</span><h3>{interest}</h3></div>)}</div>
-  </section>}
-  {projects.length>0 && <section class="section featured"><div class="container"><SectionHeader eyebrow={locale==='zh'?'研究':'Research'} title={locale==='zh'?'重点研究':'Featured research'} link={getLocalizedPath(locale,'/research/') + '#projects'} linkLabel={locale==='zh'?'全部项目':'All projects'} /><div class="project-flow">{projects.map((project,index)=><ProjectCard {project} {locale} {index} />)}</div></div></section>}
-  {publications.length>0 && <section class="section"><div class="container"><SectionHeader eyebrow={locale==='zh'?'成果':'Output'} title={locale==='zh'?'代表论文':'Selected publications'} link={getLocalizedPath(locale,'/research/') + '#publications'} linkLabel={locale==='zh'?'全部论文':'All publications'} /><div class="pub-rail-wrap"><div class="rail-nav" data-pagefind-ignore><button type="button" data-rail-prev aria-label={locale==='zh'?'向左滑动':'Scroll left'}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><button type="button" data-rail-next aria-label={locale==='zh'?'向右滑动':'Scroll right'}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button></div><div class="pub-rail" data-rail tabindex="0" role="region" aria-label={locale==='zh'?'代表论文':'Selected publications'}>{publications.map((publication)=><PublicationCard {publication} {locale} />)}</div></div></div></section>}
-  {news.length>0 && <section class="section soft"><div class="container narrow-shift"><SectionHeader eyebrow={locale==='zh'?'动态':'Updates'} title={locale==='zh'?'最新动态':'Latest news'} link={getLocalizedPath(locale,'/news/')} linkLabel={locale==='zh'?'全部动态':'All news'} /><NewsList items={news} {locale} /></div></section>}
-  {posts.length>0 && <section class="section"><div class="container"><SectionHeader eyebrow={locale==='zh'?'写作':'Writing'} title={locale==='zh'?'最近写作':'Latest writing'} link={getLocalizedPath(locale,'/interests/') + '#writing'} linkLabel={locale==='zh'?'全部文章':'All writing'} /><div class="blog-grid">{posts.map((post)=><BlogCard {post} {locale} />)}</div></div></section>}
-  <section class="contact-band section"><div class="container"><p class="eyebrow">{locale==='zh'?'联系':'Contact'}</p><h2>{locale==='zh'?'让严谨的想法，走向更远。':'Let rigorous ideas travel further.'}</h2><a class="button secondary" href={getLocalizedPath(locale,'/contact/')}>{locale==='zh'?'联系方式':'Get in touch'}</a></div></section>
+    <Hero {locale} cover={homepageCover} />
+    {(topics.length > 0 || projects.length > 0 || publications.length > 0) && <section class="section research">
+      <div class="container">
+        <header class="research-intro" data-reveal="fade-up">
+          <h2 class="display-title">{zh ? '研究' : 'Research'}</h2>
+          {topics.length > 0 && <ul class="topic-list">{topics.map((topic) => <li>{topic}</li>)}</ul>}
+          <a class="text-link" href={getLocalizedPath(locale, '/research/')}>{zh ? '查看全部研究' : 'View all research'}</a>
+        </header>
+        {publications.length > 0 && <div class:list={['home-publications', { 'single-publication': publications.length === 1 }]} aria-label={zh ? '代表论文' : 'Selected publications'}>
+          {publications.map((publication) => <PublicationCard {publication} {locale} />)}
+        </div>}
+        {projects.map((project, index) => <ProjectCard {project} {locale} {index} />)}
+      </div>
+    </section>}
+    {news.length > 0 && <section class="section">
+      <div class="container news-layout">
+        <SectionHeader title={zh ? '最新动态' : 'Latest news'} link={getLocalizedPath(locale, '/news/')} linkLabel={zh ? '全部动态' : 'All news'} />
+        <NewsList items={news} {locale} />
+      </div>
+    </section>}
+    <section class="section home-interests">
+      <div class="container">
+        <SectionHeader title={zh ? '兴趣' : 'Interests'} />
+        {photo && cover ? <a class="photo-feature pressable" href={getLocalizedPath(locale, '/interests/')} data-reveal="scale" aria-label={zh ? '浏览摄影相册' : 'Browse photography gallery'}>
+          <img src={assetUrl(cover.src)} srcset={cover.srcset} sizes="(max-width: 1200px) 95vw, 1152px"
+            width={cover.width || undefined} height={cover.height || undefined} alt={photoText(photo.data, locale).alt} loading="lazy" decoding="async" />
+          <div class="photo-feature-copy"><span>{zh ? '摄影' : 'Photography'}</span><strong>{photoText(photo.data, locale).title}</strong></div>
+        </a> : <a class="interest-entry pressable" href={getLocalizedPath(locale, '/interests/')} data-reveal="fade-up">
+          <strong>{zh ? '摄影' : 'Photography'}</strong>
+          <span>{zh ? '浏览相册' : 'View gallery'}</span>
+        </a>}
+      </div>
+    </section>
+    {posts.length > 0 && <section class="section"><div class="container">
+      <SectionHeader title={zh ? '最近写作' : 'Latest writing'} link={getLocalizedPath(locale, '/blog/')} linkLabel={zh ? '全部文章' : 'All writing'} />
+      <div class="blog-grid">{posts.map((post) => <BlogCard {post} {locale} />)}</div>
+    </div></section>}
   </div>
+  {publications.length > 0 && <BibtexDialog {locale} />}
 </BaseLayout>
 <style>
-  .statement{background:var(--color-surface)}.statement-grid{display:grid;grid-template-columns:10rem 1fr;gap:2rem}.statement-text{max-width:32ch;margin:0;font-size:clamp(2rem,4.2vw,4.5rem);font-weight:620;line-height:1.12;letter-spacing:-.045em}.statement-grid>.text-link{grid-column:2}.interests{padding-bottom:0}.interest-list>div{display:grid;grid-template-columns:5rem 1fr;align-items:baseline;padding:1.3rem 0;border-top:1px solid var(--color-line)}.interest-list span{color:var(--color-faint);font-size:var(--text-xs)}.interest-list h3{margin:0;font-size:clamp(1.4rem,3vw,2.7rem);font-weight:560;letter-spacing:-.035em}.featured{background:var(--color-surface)}.project-flow{position:relative}.soft{background:var(--color-accent-soft)}.narrow-shift{display:grid;grid-template-columns:minmax(14rem,.4fr) 1fr;gap:clamp(2rem,7vw,7rem)}.narrow-shift :global(.section-header){display:block}.blog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem}.contact-band h2{max-width:12ch;margin:.5rem 0 2rem;font-size:clamp(2.5rem,6vw,6.5rem);line-height:.98;letter-spacing:-.06em}
-  @media(max-width:760px){.statement-grid,.narrow-shift{grid-template-columns:1fr}.statement-grid>.text-link{grid-column:1}.blog-grid{grid-template-columns:1fr}.interest-list>div{grid-template-columns:3rem 1fr}}
-  .pub-rail-wrap{position:relative}
-  .rail-nav{display:flex;justify-content:flex-end;gap:.5rem;margin-bottom:1rem}
-  .rail-nav button{display:inline-flex;align-items:center;justify-content:center;width:2.5rem;height:2.5rem;border:1px solid var(--color-line);border-radius:50%;background:var(--color-surface);color:var(--color-text);cursor:pointer;transition:opacity var(--transition-fast),border-color var(--transition-fast)}
-  .rail-nav button:hover:not(:disabled){border-color:var(--color-accent)}
-  .rail-nav button:disabled{opacity:.3;cursor:default}
-  .pub-rail-wrap.is-static .rail-nav{display:none}
-  .pub-rail{display:flex;gap:1.6rem;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;padding-bottom:.6rem;scrollbar-width:none}
-  .pub-rail::-webkit-scrollbar{display:none}
-  .pub-rail:focus-visible{outline:2px solid var(--color-accent);outline-offset:6px;border-radius:var(--radius-sm)}
-  .pub-rail>:global(.publication){flex:0 0 min(21rem,78vw);scroll-snap-align:start}
-  @media(max-width:760px){.rail-nav{display:none}}
+  .research{padding-block:clamp(3.2rem,6.5vw,6.5rem);background:var(--color-surface)}
+  .research-intro{display:grid;justify-items:center;gap:.95rem;margin:0 0 clamp(1.8rem,4vw,3.75rem);text-align:center}
+  .topic-list{display:flex;flex-wrap:wrap;justify-content:center;gap:.4rem 1.2rem;margin:0;padding:0;list-style:none;color:var(--color-muted);font-size:var(--text-base)}
+  .topic-list li{display:flex;align-items:center;gap:.6rem}
+  .topic-list li::before{content:"";width:.26rem;height:.26rem;border-radius:50%;background:currentColor}
+  .home-publications,.blog-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));gap:1rem;margin-bottom:1rem}
+  .home-publications :global(.publication){background:var(--color-bg);padding:clamp(1rem,2.5vw,1.75rem);border-radius:var(--radius-md)}
+  .single-publication :global(.publication:has(.pub-thumb)){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(1.5rem,4vw,3rem);align-items:center}
+  .single-publication :global(.pub-thumb){margin:0;aspect-ratio:1.65;object-fit:contain;background:#fff}
+  .single-publication :global(.pub-title){font-size:clamp(1.15rem,1rem + .55vw,1.5rem)}
+  .news-layout{display:grid;grid-template-columns:minmax(12rem,.38fr) minmax(0,1fr);gap:1.3rem clamp(1.5rem,7vw,7rem)}
+  .news-layout :global(.section-header){display:flex;flex-direction:column;align-items:start;margin:0}
+  .home-interests{background:var(--color-surface)}
+  .interest-entry{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.6rem 1rem;padding:clamp(1.1rem,3vw,2rem);border:1px solid var(--color-line);border-radius:var(--radius-lg);background:var(--color-bg);text-decoration:none;transition:background var(--transition-base)}
+  .interest-entry:hover{background:var(--color-accent-soft)}
+  .interest-entry strong{font-size:var(--text-xl);letter-spacing:-.025em}
+  .interest-entry span{color:var(--color-accent-strong);font-weight:600}
+  .photo-feature{position:relative;display:grid;align-items:end;min-height:clamp(17rem,40vw,33rem);overflow:hidden;isolation:isolate;border-radius:var(--radius-lg);background:#152322;color:#fff;text-decoration:none}
+  .photo-feature::after,.photo-feature img{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
+  .photo-feature::after{content:"";background:linear-gradient(0deg,rgb(0 0 0 / .68),transparent 65%)}
+  .photo-feature img{object-fit:cover;object-position:50% 58%;transition:transform .65s var(--ease-out)}
+  .photo-feature:hover img{transform:scale(1.025)}
+  .photo-feature-copy{display:grid;gap:.2rem;padding:clamp(1.3rem,4vw,3rem)}
+  .photo-feature-copy span{font-size:var(--text-sm)}
+  .photo-feature-copy strong{font-size:var(--text-2xl);letter-spacing:-.035em;line-height:1.2}
+  @media(max-width:700px){.single-publication :global(.publication:has(.pub-thumb)),.news-layout{grid-template-columns:1fr}}
 </style>
-<script>
-  const setupRails = () => {
-    document.querySelectorAll<HTMLElement>('[data-rail]').forEach((rail) => {
-      const wrap = rail.parentElement;
-      const prev = wrap?.querySelector<HTMLButtonElement>('[data-rail-prev]');
-      const next = wrap?.querySelector<HTMLButtonElement>('[data-rail-next]');
-      if (!wrap || !prev || !next || rail.dataset.ready) return;
-      rail.dataset.ready = 'true';
-      const step = () => Math.max(rail.clientWidth * 0.8, 280);
-      const sync = () => {
-        const max = rail.scrollWidth - rail.clientWidth - 1;
-        prev.disabled = rail.scrollLeft <= 0;
-        next.disabled = rail.scrollLeft >= max;
-        wrap.classList.toggle('is-static', max <= 0);
-      };
-      prev.addEventListener('click', () => rail.scrollBy({ left: -step(), behavior: 'smooth' }));
-      next.addEventListener('click', () => rail.scrollBy({ left: step(), behavior: 'smooth' }));
-      rail.addEventListener('scroll', sync, { passive: true });
-      addEventListener('resize', sync);
-      sync();
-    });
-  };
-  setupRails(); document.addEventListener('astro:after-swap', setupRails);
-</script>
