@@ -10,9 +10,10 @@ import NewsList from './NewsList.astro';
 import BlogCard from './BlogCard.astro';
 import site from '@/data/site';
 import type { Locale } from '@/types';
-import { assetUrl, getLocalizedPath } from '@/utils/urls';
+import { getLocalizedPath } from '@/utils/urls';
 import { isPublished, sortByDate } from '@/utils/content';
-import { getPhotos, photoText, photoImage } from '@/utils/photos';
+import { getPhotos } from '@/utils/photos';
+import PhotoCarousel from './PhotoCarousel.astro';
 interface Props { locale: Locale }
 const { locale } = Astro.props;
 const zh = locale === 'zh';
@@ -26,8 +27,7 @@ const news = sortByDate(newsRaw.filter((item) => item.data.locale === locale && 
 const posts = sortByDate(postsRaw.filter((item) => item.data.locale === locale && isPublished(item))).slice(0, 3);
 const topics = zh ? site.researchInterests : site.researchInterestsEn;
 const homepageCover = photos.find(({ data }) => data.image === site.avatar);
-const photo = photos.find(({ data }) => data.image !== site.avatar);
-const cover = photo && photoImage(photo.data.image, photo.data.maxSize, photo.data.compress);
+const features = photos.filter(({ data }) => data.image !== site.avatar);
 ---
 <BaseLayout {locale}>
   <div data-pagefind-body>
@@ -53,12 +53,9 @@ const cover = photo && photoImage(photo.data.image, photo.data.maxSize, photo.da
     </section>}
     <section class="section home-interests">
       <div class="container">
-        <SectionHeader title={zh ? '兴趣' : 'Interests'} />
-        {photo && cover ? <a class="photo-feature pressable" href={getLocalizedPath(locale, '/interests/')} data-reveal="scale" aria-label={zh ? '浏览摄影相册' : 'Browse photography gallery'}>
-          <img src={assetUrl(cover.src)} srcset={cover.srcset} sizes="(max-width: 1200px) 95vw, 1152px"
-            width={cover.width || undefined} height={cover.height || undefined} alt={photoText(photo.data, locale).alt} loading="lazy" decoding="async" />
-          <div class="photo-feature-copy"><span>{zh ? '摄影' : 'Photography'}</span><strong>{photoText(photo.data, locale).title}</strong></div>
-        </a> : <a class="interest-entry pressable" href={getLocalizedPath(locale, '/interests/')} data-reveal="fade-up">
+        <SectionHeader title={zh ? '兴趣' : 'Interests'} link={features.length ? getLocalizedPath(locale, '/interests/') : undefined}
+          linkLabel={zh ? '浏览相册' : 'View gallery'} />
+        {features.length ? <PhotoCarousel {locale} photos={features} /> : <a class="interest-entry pressable" href={getLocalizedPath(locale, '/interests/')} data-reveal="fade-up">
           <strong>{zh ? '摄影' : 'Photography'}</strong>
           <span>{zh ? '浏览相册' : 'View gallery'}</span>
         </a>}
@@ -89,13 +86,5 @@ const cover = photo && photoImage(photo.data.image, photo.data.maxSize, photo.da
   .interest-entry:hover{background:var(--color-accent-soft)}
   .interest-entry strong{font-size:var(--text-xl);letter-spacing:-.025em}
   .interest-entry span{color:var(--color-accent-strong);font-weight:600}
-  .photo-feature{position:relative;display:grid;align-items:end;min-height:clamp(17rem,40vw,33rem);overflow:hidden;isolation:isolate;border-radius:var(--radius-lg);background:#152322;color:#fff;text-decoration:none}
-  .photo-feature::after,.photo-feature img{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
-  .photo-feature::after{content:"";background:linear-gradient(0deg,rgb(0 0 0 / .68),transparent 65%)}
-  .photo-feature img{object-fit:cover;object-position:50% 58%;transition:transform .65s var(--ease-out)}
-  .photo-feature:hover img{transform:scale(1.025)}
-  .photo-feature-copy{display:grid;gap:.2rem;padding:clamp(1.3rem,4vw,3rem)}
-  .photo-feature-copy span{font-size:var(--text-sm)}
-  .photo-feature-copy strong{font-size:var(--text-2xl);letter-spacing:-.035em;line-height:1.2}
   @media(max-width:700px){.single-publication :global(.publication:has(.pub-thumb)),.news-layout{grid-template-columns:1fr}}
 </style>

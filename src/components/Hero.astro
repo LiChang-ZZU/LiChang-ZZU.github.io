@@ -2,8 +2,9 @@
 import type { CollectionEntry } from 'astro:content';
 import site from '@/data/site';
 import type { Locale } from '@/types';
-import { assetUrl, getLocalizedPath } from '@/utils/urls';
+import { getLocalizedPath } from '@/utils/urls';
 import { photoImage, photoText } from '@/utils/photos';
+import ResponsivePhoto from './ResponsivePhoto.astro';
 
 interface Props {
   locale: Locale;
@@ -11,7 +12,7 @@ interface Props {
 }
 const { locale, cover } = Astro.props;
 const zh = locale === 'zh';
-const image = cover && photoImage(cover.data.image, cover.data.maxSize, cover.data.compress);
+const image = cover ? photoImage(cover.data.image, cover.data.maxSize, cover.data.compress) : photoImage(site.avatar);
 ---
 <section class="hero">
   <div class="hero-copy copy-container">
@@ -24,26 +25,25 @@ const image = cover && photoImage(cover.data.image, cover.data.maxSize, cover.da
     </div>
   </div>
   {site.avatar && <figure class="hero-cover">
-    <img src={assetUrl(image?.src ?? site.avatar)} srcset={image?.srcset}
-      sizes="100vw" alt={cover ? photoText(cover.data, locale).alt : ''}
-      width={image?.width || undefined} height={image?.height || undefined} fetchpriority="high" />
+    <ResponsivePhoto {image} sizes="(max-width: 760px) calc(100vw - 1.5rem), (max-width: 1460px) 93vw, 1344px"
+      alt={cover ? photoText(cover.data, locale).alt : ''} priority />
   </figure>}
 </section>
 <style>
-  .hero{display:grid;grid-template-rows:auto 1fr;background:var(--color-bg);color:var(--color-text)}
+  .hero{padding-bottom:clamp(1.45rem,4vw,3.5rem);background:var(--color-bg);color:var(--color-text)}
   .hero-copy{text-align:center;padding-block:calc(var(--nav-height) + clamp(2.55rem,5vw,3.6rem)) clamp(1.6rem,3vw,2.1rem)}
   .hero h1{margin:0;font-size:clamp(3.65rem,6.5vw,5.5rem);font-weight:720;line-height:1.01;letter-spacing:-.064em;text-wrap:balance}
   .hero-role{margin:.63rem 0 0;font-size:clamp(1.16rem,.96rem + 1vw,1.7rem);font-weight:570;letter-spacing:-.025em;line-height:1.3;text-wrap:balance}
   .hero-bio{max-width:36rem;margin:.58rem auto 0;color:var(--color-muted);font-size:var(--text-base);line-height:1.55;text-wrap:pretty}
   .hero-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:.7rem;margin-top:1.2rem}
   .hero-actions .secondary{--button-fill:transparent;--button-hover:var(--color-accent-soft);--button-text:var(--color-accent-strong);border-color:var(--color-accent);box-shadow:none}
-  .hero figure{position:relative;overflow:hidden;width:100%;height:clamp(22rem,40vw,36rem);margin:0;background:var(--color-surface)}
-  .hero figure::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(var(--color-bg),transparent clamp(1.75rem,5vw,4.5rem))}
-  .hero img{width:100%;height:100%;object-fit:cover;object-position:50% 74%}
+  .hero-cover{overflow:hidden;width:min(93%,84rem);aspect-ratio:2.35;margin:0 auto;border-radius:clamp(1rem,2vw,1.55rem);background:var(--color-surface)}
+  .hero-cover :global(picture){height:100%}
+  .hero-cover :global(img){width:100%;height:100%;object-fit:cover;object-position:50% 64%}
   @media(max-width:760px){
     .hero-copy{padding-block:calc(var(--nav-height) + 2.55rem) 1.1rem}
     .hero h1{font-size:clamp(3.15rem,12.5vw,4.75rem)}
-    .hero figure{height:auto;aspect-ratio:1.13}
-    .hero img{object-position:56% 60%}
+    .hero-cover{width:calc(100% - 1.5rem);aspect-ratio:1.18}
+    .hero-cover :global(img){object-position:56% 60%}
   }
 </style>

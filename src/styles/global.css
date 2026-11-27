@@ -163,7 +163,7 @@ button { color: inherit; }
   [data-reveal].is-pending:not(.is-revealed):not(:focus-within) { opacity: 0; }
   [data-reveal="fade-up"].is-pending:not(.is-revealed):not(:focus-within) { transform: translateY(15px); }
   [data-reveal="scale"].is-pending:not(.is-revealed):not(:focus-within) { transform: scale(.986); }
-  html:not([data-route-motion]) main { animation: content-enter .46s var(--ease-out) both; }
+  html:not([data-route-motion]) main:not(:has(.hero-cover)) { animation: content-enter .46s var(--ease-out) both; }
   html:not([data-theme-motion]) .nav-bar { view-transition-name: site-navigation; }
   html:not([data-theme-motion]) .nav-active { view-transition-name: nav-indicator; }
   html:not([data-theme-motion])::view-transition-old(root) { animation: content-exit 180ms var(--ease-press) both; }

@@ -4,7 +4,13 @@ import type { Locale } from '@/types';
 import { assetUrl } from './urls';
 
 type PhotoImage = { src: string; width: number; height: number };
-type PhotoVariants = { full: PhotoImage; thumbnails: PhotoImage[] };
+type PhotoVariants = { full: PhotoImage; thumbnails: PhotoImage[]; webp?: PhotoImage[]; avif?: PhotoImage[] };
+export type ResponsiveImage = PhotoImage & {
+  full: string;
+  srcset?: string;
+  webpSrcset?: string;
+  avifSrcset?: string;
+};
 let manifest: Record<string, PhotoVariants> = {};
 try {
   manifest = JSON.parse(readFileSync('.photo-manifest.json', 'utf8'));
@@ -18,20 +24,27 @@ export async function getPhotos() {
     a.id.localeCompare(b.id));
 }
 
-export function photoImage(image: string, maxSize: number, compress: boolean) {
-  const variants = manifest[JSON.stringify([image, maxSize, compress])];
-  if (!variants) return { src: image, full: image, width: 0, height: 0, srcset: undefined };
-  const { full, thumbnails } = variants;
+function toSrcset(images: PhotoImage[] = []) {
   const byWidth = new Map<number, PhotoImage>();
-  for (const variant of [...thumbnails, full]) {
-    if (!byWidth.has(variant.width)) byWidth.set(variant.width, variant);
+  for (const image of images) {
+    if (!byWidth.has(image.width)) byWidth.set(image.width, image);
   }
+  return [...byWidth.values()].sort((a, b) => a.width - b.width)
+    .map((variant) => `${assetUrl(variant.src)} ${variant.width}w`).join(', ') || undefined;
+}
+
+export function photoImage(image: string, maxSize = 1, compress = false): ResponsiveImage {
+  const variants = manifest[JSON.stringify([image, maxSize, compress])];
+  if (!variants) return { src: image, full: image, width: 0, height: 0 };
+  const { full, thumbnails, webp, avif } = variants;
   return {
     src: thumbnails.at(1)?.src ?? thumbnails[0]?.src ?? full.src,
     full: full.src,
     width: full.width,
     height: full.height,
-    srcset: [...byWidth.values()].map((variant) => `${assetUrl(variant.src)} ${variant.width}w`).join(', '),
+    srcset: thumbnails.length ? toSrcset([...thumbnails, full]) : undefined,
+    webpSrcset: toSrcset(webp),
+    avifSrcset: toSrcset(avif),
   };
 }
 

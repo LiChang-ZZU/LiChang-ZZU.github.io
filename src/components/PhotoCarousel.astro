@@ -1,0 +1,190 @@
+---
+import type { Locale } from '@/types';
+import { getLocalizedPath } from '@/utils/urls';
+import { getPhotos, photoImage, photoText } from '@/utils/photos';
+import ResponsivePhoto from './ResponsivePhoto.astro';
+
+interface Props { locale: Locale; photos: Awaited<ReturnType<typeof getPhotos>> }
+const { locale, photos } = Astro.props;
+const zh = locale === 'zh';
+const href = getLocalizedPath(locale, '/interests/');
+const slides = photos.map(({ data }) => ({
+  image: photoImage(data.image, data.maxSize, data.compress),
+  ...photoText(data, locale),
+}));
+---
+<section class="photo-carousel" data-carousel aria-label={zh ? '摄影作品轮播' : 'Photography slideshow'}
+  data-pause={zh ? '暂停轮播' : 'Pause slideshow'} data-play={zh ? '播放轮播' : 'Play slideshow'}>
+  <div class="carousel-stage">
+    {slides.map(({ image, title, alt }, index) => {
+      const Wrapper = index === 0 ? 'div' : 'template';
+      const portrait = image.height > image.width;
+      const sizes = portrait ? '(max-width: 620px) 46vw, (max-width: 1240px) 27vw, 330px'
+        : '(max-width: 1240px) 92vw, 1152px';
+      return <Wrapper data-slide={index}>
+        <a class:list={['carousel-slide', { 'is-active': index === 0, 'is-portrait': portrait }]} href={href}>
+          <ResponsivePhoto {image} {alt} {sizes} />
+          <span class="slide-caption">{title}</span>
+        </a>
+      </Wrapper>;
+    })}
+  </div>
+  {slides.length > 1 && <div class="carousel-controls" data-carousel-controls hidden>
+    <div class="carousel-indicators" aria-label={zh ? '选择照片' : 'Choose a photo'}>
+      {slides.map(({ title }, index) =>
+        <button class="carousel-dot icon-button" type="button" data-carousel-index={index}
+          aria-current={index === 0 ? 'true' : undefined} aria-label={title}></button>
+      )}
+    </div>
+    <div class="carousel-buttons">
+      <button class="carousel-button icon-button" type="button" data-carousel-step="-1" aria-label={zh ? '上一张' : 'Previous photo'}>‹</button>
+      <button class="carousel-button carousel-play icon-button" type="button" data-carousel-play aria-label={zh ? '暂停轮播' : 'Pause slideshow'}>Ⅱ</button>
+      <button class="carousel-button icon-button" type="button" data-carousel-step="1" aria-label={zh ? '下一张' : 'Next photo'}>›</button>
+    </div>
+    <span class="carousel-status" aria-live="polite"></span>
+  </div>}
+</section>
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('[data-carousel]')) {
+    const templates = [...root.querySelectorAll<HTMLTemplateElement>('template[data-slide]')];
+    const controls = root.querySelector<HTMLElement>('[data-carousel-controls]');
+    if (!templates.length || !controls) continue;
+
+    const stage = root.querySelector<HTMLElement>('.carousel-stage')!;
+    const dots = [...controls.querySelectorAll<HTMLButtonElement>('[data-carousel-index]')];
+    const play = controls.querySelector<HTMLButtonElement>('[data-carousel-play]')!;
+    const status = controls.querySelector('.carousel-status')!;
+    const motion = matchMedia('(prefers-reduced-motion: reduce)');
+    const hover = matchMedia('(hover: hover)');
+    let active = stage.querySelector<HTMLAnchorElement>('.is-active')!;
+    const first = active.cloneNode(true) as HTMLAnchorElement;
+    let visible = false;
+    let playing = !motion.matches;
+    let hovered = false;
+    let focused = false;
+    let current = 0;
+    let desired = 0;
+    let revision = 0;
+    let timer: number | undefined;
+    let pending: HTMLAnchorElement | undefined;
+
+    function schedule() {
+      clearTimeout(timer);
+      if (playing && !hovered && !focused && visible && !document.hidden) {
+        timer = window.setTimeout(() => void show(desired + 1, false), 5500);
+      }
+    }
+
+    async function show(next: number, announce: boolean) {
+      clearTimeout(timer);
+      desired = (next + dots.length) % dots.length;
+      const index = desired;
+      const request = ++revision;
+      pending?.remove();
+      pending = undefined;
+      if (index === current) { schedule(); return; }
+
+      const template = templates[index - 1];
+      const slide = index === 0 ? first.cloneNode(true) as HTMLAnchorElement
+        : template?.content.firstElementChild?.cloneNode(true) as HTMLAnchorElement | undefined;
+      if (!slide) { schedule(); return; }
+      pending = slide;
+      slide.classList.remove('is-active');
+      slide.inert = true;
+      stage.append(slide);
+      const image = slide.querySelector('img')!;
+      image.loading = 'eager';
+      try {
+        await image.decode();
+      } catch {
+        slide.remove();
+        if (request === revision) schedule();
+        return;
+      }
+      if (request !== revision) { slide.remove(); return; }
+      pending = undefined;
+      const previous = active;
+      previous.inert = true;
+      previous.classList.remove('is-active');
+      slide.inert = false;
+      // Give cached slides the same fade as images arriving from the network.
+      void slide.offsetWidth;
+      slide.classList.add('is-active');
+      active = slide;
+      current = index;
+      window.setTimeout(() => previous.remove(), motion.matches ? 0 : 550);
+      dots.forEach((dot, dotIndex) => {
+        if (dotIndex === index) dot.setAttribute('aria-current', 'true');
+        else dot.removeAttribute('aria-current');
+      });
+      if (announce) status.textContent = dots[index]?.getAttribute('aria-label') ?? '';
+      schedule();
+    }
+
+    const setPlaying = (value: boolean) => {
+      playing = value;
+      play.textContent = playing ? 'Ⅱ' : '▶';
+      play.setAttribute('aria-label', (playing ? root.dataset.pause : root.dataset.play) ?? '');
+      schedule();
+    };
+
+    controls.hidden = false;
+    setPlaying(playing);
+    play.addEventListener('click', () => {
+      setPlaying(!playing);
+      if (playing) focused = false;
+      schedule();
+    });
+    motion.addEventListener('change', () => setPlaying(!motion.matches));
+    document.addEventListener('visibilitychange', schedule);
+    root.addEventListener('pointerenter', () => { if (hover.matches) { hovered = true; schedule(); } });
+    root.addEventListener('pointerleave', () => { hovered = false; schedule(); });
+    root.addEventListener('focusin', () => { focused = true; schedule(); });
+    root.addEventListener('focusout', (event) => {
+      if (event.relatedTarget instanceof Node && root.contains(event.relatedTarget)) return;
+      focused = false;
+      schedule();
+    });
+    controls.addEventListener('click', (event) => {
+      if (!(event.target instanceof HTMLElement)) return;
+      const { carouselStep, carouselIndex } = event.target.dataset;
+      if (carouselStep) void show(desired + Number(carouselStep), true);
+      if (carouselIndex !== undefined) void show(Number(carouselIndex), true);
+    });
+    root.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      void show(desired + (event.key === 'ArrowLeft' ? -1 : 1), true);
+    });
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(([entry]) => {
+        visible = Boolean(entry?.isIntersecting && entry.intersectionRatio >= .35);
+        schedule();
+      }, { threshold: .35 });
+      observer.observe(stage);
+    }
+  }
+</script>
+<style>
+  .carousel-stage{position:relative;isolation:isolate;overflow:hidden;aspect-ratio:2.35;border-radius:var(--radius-lg);background:var(--color-bg)}
+  .carousel-slide{position:absolute;inset:0;z-index:0;display:grid;align-items:end;opacity:0;color:#fff;overflow:hidden;text-decoration:none;transition:opacity .48s var(--ease-out)}
+  .carousel-slide.is-active{z-index:1;opacity:1}
+  .carousel-slide:focus-visible{outline-offset:-5px;border-radius:var(--radius-lg)}
+  .carousel-slide :global(img){position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 54%;z-index:-2}
+  .carousel-slide.is-portrait{background:#131718}
+  .carousel-slide.is-portrait :global(img){object-fit:contain}
+  .carousel-slide::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgb(0 0 0 / .7),transparent 52%);z-index:-1}
+  .slide-caption{padding:clamp(1.15rem,4vw,2.85rem);font-size:clamp(1.35rem,3vw,2.65rem);font-weight:650;line-height:1.15;letter-spacing:-.025em}
+  .carousel-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.55rem .8rem;margin-top:.8rem}
+  .carousel-controls[hidden]{display:none}
+  .carousel-indicators,.carousel-buttons{display:flex;align-items:center;gap:.25rem}
+  .carousel-dot,.carousel-button{display:grid;place-items:center;border:0;cursor:pointer}
+  .carousel-dot{width:1.6rem;height:2.5rem;padding:0;border-radius:var(--radius-pill);background:none}
+  .carousel-dot::after{content:"";width:.4rem;height:.4rem;border-radius:var(--radius-pill);background:var(--color-faint);transition:width var(--transition-fast),background-color var(--transition-fast)}
+  .carousel-dot[aria-current="true"]::after{width:1rem;background:var(--color-accent)}
+  .carousel-button{width:2.75rem;height:2.75rem;border-radius:var(--radius-pill);background:var(--color-bg);color:var(--color-text);font-size:1.5rem;line-height:1}
+  .carousel-button:hover{background:var(--color-accent-soft)}
+  .carousel-play{font-size:.95rem;font-weight:680}
+  .carousel-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  @media(max-width:620px){.carousel-stage{aspect-ratio:1.35}}
+</style>
