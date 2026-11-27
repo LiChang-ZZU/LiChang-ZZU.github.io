@@ -8,16 +8,18 @@ interface Props {
   sizes: string;
   class?: string;
   priority?: boolean;
+  eager?: boolean;
+  fetchPriority?: 'high' | 'low' | 'auto';
 }
 
-const { image, alt, sizes, class: className, priority = false } = Astro.props;
+const { image, alt, sizes, class: className, priority = false, eager = false, fetchPriority } = Astro.props;
 ---
 <picture>
   {image.avifSrcset && <source type="image/avif" srcset={image.avifSrcset} {sizes} />}
   {image.webpSrcset && <source type="image/webp" srcset={image.webpSrcset} {sizes} />}
   <img class={className} src={assetUrl(image.src)} srcset={image.srcset} sizes={image.srcset ? sizes : undefined}
     {alt} width={image.width || undefined} height={image.height || undefined}
-    loading={priority ? 'eager' : 'lazy'} fetchpriority={priority ? 'high' : undefined}
+    loading={priority || eager ? 'eager' : 'lazy'} fetchpriority={priority ? 'high' : fetchPriority}
     decoding={priority ? undefined : 'async'} />
 </picture>
 <style>

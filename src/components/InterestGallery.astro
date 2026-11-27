@@ -45,7 +45,7 @@ while (offset < tiles.length) {
             const sizes = `(max-width: 620px) calc(100vw - 2.5rem), (max-width: 1240px) ${Math.round(92 * share)}vw, ${Math.round(1152 * share)}px`;
             return <figure class="photo-item" style={`--photo-ratio:${ratio}`}>
               <a class="photo-trigger pressable" href={assetUrl(image.full)} aria-label={zh ? `查看大图：${title}` : `Enlarge ${title}`}>
-                <ResponsivePhoto {image} {sizes} {alt} priority={rowIndex === 0 && index === 0} />
+                <ResponsivePhoto {image} {sizes} {alt} priority={rowIndex === 0 && index === 0} fetchPriority="low" />
                 <span class="photo-zoom-hint" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 4.75H4.75V9M15 4.75h4.25V9M4.75 15v4.25H9M19.25 15v4.25H15"/></svg></span>
               </a>
               <figcaption>

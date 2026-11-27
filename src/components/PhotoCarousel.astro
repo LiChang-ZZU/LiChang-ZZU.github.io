@@ -19,9 +19,9 @@ const initialSlots = slides.length > 1 ? [
 ] : slides.length ? [{ slide: slides[0]!, index: 0, position: 'center' }] : [];
 const responsiveSizes = (ratio: number, side = false) => {
   const factor = side ? .72 : 1;
-  const mobile = Math.min(76, Math.ceil(ratio * 56 * factor));
-  const tablet = Math.min(76, Math.ceil(ratio * 58 * factor));
-  const desktop = Math.min(1200, Math.ceil(ratio * 608 * factor));
+  const mobile = Math.min(70, Math.ceil(ratio * 50.4 * factor));
+  const tablet = Math.min(70, Math.ceil(ratio * 52.2 * factor));
+  const desktop = Math.min(1200, Math.ceil(ratio * 547 * factor));
   return `(max-width: 620px) ${mobile}vw, (max-width: 1240px) ${tablet}vw, ${desktop}px`;
 };
 ---
@@ -29,7 +29,7 @@ const responsiveSizes = (ratio: number, side = false) => {
   <div class="carousel-stage" data-carousel-stage>
     {slides.map(({ image, ratio, title, alt }, index) => <template data-slide={index}>
       <a class="carousel-slide" data-carousel-slide data-index={index} style={`--photo-ratio:${ratio}`} href={href} aria-label={alt}>
-        <ResponsivePhoto {image} {alt} sizes={responsiveSizes(ratio, true)} />
+        <ResponsivePhoto {image} {alt} sizes={responsiveSizes(ratio, true)} fetchPriority="low" />
         <span class="slide-caption">{title}</span>
       </a>
     </template>)}
@@ -39,20 +39,20 @@ const responsiveSizes = (ratio: number, side = false) => {
       return <a class:list={['carousel-slide', `is-${position}`]} data-carousel-slide data-index={index}
         style={`--photo-ratio:${ratio}`} href={href} aria-label={alt} aria-hidden={!active ? 'true' : undefined}
         inert={!active}>
-        <ResponsivePhoto {image} {alt} sizes={responsiveSizes(ratio, !active)} />
+        <ResponsivePhoto {image} {alt} sizes={responsiveSizes(ratio, !active)} eager={active} fetchPriority="low" />
         <span class="slide-caption">{title}</span>
       </a>;
     })}
-    {slides.length > 1 && <div class="carousel-controls" data-carousel-controls hidden>
-      <button class="carousel-arrow previous" type="button" data-carousel-step="-1" aria-label={zh ? '上一张照片' : 'Previous photo'}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.75 5.5-6.5 6.5 6.5 6.5" /></svg>
-      </button>
-      <button class="carousel-arrow next" type="button" data-carousel-step="1" aria-label={zh ? '下一张照片' : 'Next photo'}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.25 5.5 6.5 6.5-6.5 6.5" /></svg>
-      </button>
-    </div>}
     <span class="carousel-status" aria-live="polite"></span>
   </div>
+  {slides.length > 1 && <div class="carousel-controls" data-carousel-controls hidden>
+    <button class="carousel-arrow previous" type="button" data-carousel-step="-1" aria-label={zh ? '上一张照片' : 'Previous photo'}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.75 5.5-6.5 6.5 6.5 6.5" /></svg>
+    </button>
+    <button class="carousel-arrow next" type="button" data-carousel-step="1" aria-label={zh ? '下一张照片' : 'Next photo'}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.25 5.5 6.5 6.5-6.5 6.5" /></svg>
+    </button>
+  </div>}
 </section>
 <script>
   for (const root of document.querySelectorAll<HTMLElement>('[data-carousel]')) {
@@ -85,9 +85,9 @@ const responsiveSizes = (ratio: number, side = false) => {
 
     function imageSize(ratio: number, side: boolean) {
       const factor = side ? sideScale : 1;
-      const mobile = Math.min(76, Math.ceil(ratio * 56 * factor));
-      const tablet = Math.min(76, Math.ceil(ratio * 58 * factor));
-      const desktop = Math.min(1200, Math.ceil(ratio * 608 * factor));
+      const mobile = Math.min(70, Math.ceil(ratio * 50.4 * factor));
+      const tablet = Math.min(70, Math.ceil(ratio * 52.2 * factor));
+      const desktop = Math.min(1200, Math.ceil(ratio * 547 * factor));
       return `(max-width: 620px) ${mobile}vw, (max-width: 1240px) ${tablet}vw, ${desktop}px`;
     }
 
@@ -96,6 +96,7 @@ const responsiveSizes = (ratio: number, side = false) => {
       const ratio = Number.parseFloat(slide.style.getPropertyValue('--photo-ratio')) || 1.5;
       if (image) {
         image.loading = 'eager';
+        image.fetchPriority = 'high';
         image.sizes = imageSize(ratio, false);
       }
       return image?.decode().catch(() => undefined) ?? Promise.resolve();
@@ -114,7 +115,7 @@ const responsiveSizes = (ratio: number, side = false) => {
       if (!center || !left || !right) return;
       for (const slide of [left, center, right]) {
         const ratio = Number.parseFloat(slide.style.getPropertyValue('--photo-ratio')) || 1.5;
-        const width = Math.min(stage.clientHeight * ratio, stage.clientWidth * .76);
+        const width = Math.min(stage.clientHeight * .9 * ratio, stage.clientWidth * .76);
         slide.style.width = `${width}px`;
         slide.style.height = `${width / ratio}px`;
       }
@@ -124,7 +125,7 @@ const responsiveSizes = (ratio: number, side = false) => {
       left.style.setProperty('--slide-x', `${-(centerWidth / 2 + left.offsetWidth * sideScale / 2 + gap)}px`);
       center.style.setProperty('--slide-x', '0px');
       right.style.setProperty('--slide-x', `${centerWidth / 2 + right.offsetWidth * sideScale / 2 + gap}px`);
-      stage.style.setProperty('--active-half-width', `${centerWidth / 2}px`);
+      root.style.setProperty('--active-half-width', `${centerWidth / 2}px`);
     }
 
     function createSlide(index: number, role: 'left' | 'right') {
@@ -165,7 +166,7 @@ const responsiveSizes = (ratio: number, side = false) => {
       placeSlides();
       stage.append(incoming.slide);
       const incomingRatio = Number.parseFloat(incoming.slide.style.getPropertyValue('--photo-ratio')) || 1.5;
-      const incomingWidth = Math.min(stage.clientHeight * incomingRatio, stage.clientWidth * .76);
+      const incomingWidth = Math.min(stage.clientHeight * .9 * incomingRatio, stage.clientWidth * .76);
       incoming.slide.style.width = `${incomingWidth}px`;
       incoming.slide.style.height = `${incomingWidth / incomingRatio}px`;
       const incomingImageReady = incoming.image?.decode().catch(() => undefined) ?? Promise.resolve();
@@ -262,7 +263,6 @@ const responsiveSizes = (ratio: number, side = false) => {
     let dragging = false;
     stage.addEventListener('pointerdown', (event) => {
       if (event.pointerType === 'mouse' && event.button !== 0) return;
-      if (event.target instanceof Element && event.target.closest('button')) { dragging = false; return; }
       startX = event.clientX;
       startY = event.clientY;
       dragging = true;
@@ -301,11 +301,9 @@ const responsiveSizes = (ratio: number, side = false) => {
   }
 </script>
 <style>
-  .carousel-stage{--carousel-stage-height:clamp(14rem,min(58vw,62dvh),38rem);position:relative;isolation:isolate;overflow:hidden;width:100%;height:var(--carousel-stage-height);perspective:1200px;touch-action:pan-y;background:transparent}
-  .carousel-stage::before,.carousel-stage::after{content:"";position:absolute;z-index:4;inset-block:0;width:min(clamp(3rem,12vw,11rem),calc(50% - var(--active-half-width,30%)));pointer-events:none}
-  .carousel-stage::before{left:0;background:linear-gradient(90deg,var(--color-bg),transparent)}
-  .carousel-stage::after{right:0;background:linear-gradient(270deg,var(--color-bg),transparent)}
-  .carousel-slide{position:absolute;top:50%;left:50%;display:block;width:min(76vw,38rem);height:auto;max-width:76vw;max-height:var(--carousel-stage-height);aspect-ratio:var(--photo-ratio);overflow:hidden;border-radius:.68rem;color:#fff;text-decoration:none;transform:translate(calc(-50% + var(--slide-x,0px)),-50%) rotateY(var(--slide-rotate,0deg)) scale(var(--slide-scale,1));transform-style:preserve-3d;backface-visibility:hidden;opacity:var(--slide-opacity,1);filter:var(--slide-filter,none);box-shadow:0 16px 42px rgb(0 0 0 / .12);transition:transform .76s cubic-bezier(.22,1,.36,1),opacity .65s ease,filter .65s ease}
+  .photo-carousel{position:relative}
+  .carousel-stage{--carousel-stage-height:clamp(14rem,min(58vw,62dvh),38rem);--edge-fade:min(clamp(2.5rem,10vw,10rem),calc(50% - var(--active-half-width,30%)));position:relative;isolation:isolate;overflow:hidden;width:100%;height:var(--carousel-stage-height);perspective:1200px;touch-action:pan-y;-webkit-mask-image:linear-gradient(90deg,transparent,#000 var(--edge-fade),#000 calc(100% - var(--edge-fade)),transparent);mask-image:linear-gradient(90deg,transparent,#000 var(--edge-fade),#000 calc(100% - var(--edge-fade)),transparent)}
+  .carousel-slide{position:absolute;top:50%;left:50%;display:block;width:min(76vw,38rem);height:auto;max-width:76vw;max-height:var(--carousel-stage-height);aspect-ratio:var(--photo-ratio);overflow:hidden;border-radius:.68rem;color:#fff;text-decoration:none;transform:translate(calc(-50% + var(--slide-x,0px)),-50%) rotateY(var(--slide-rotate,0deg)) scale(var(--slide-scale,1));transform-style:preserve-3d;backface-visibility:hidden;opacity:var(--slide-opacity,1);filter:var(--slide-filter,none);box-shadow:0 10px 26px rgb(0 0 0 / .14);transition:transform .76s cubic-bezier(.22,1,.36,1),opacity .65s ease,filter .65s ease}
   .carousel-slide :global(picture),.carousel-slide :global(img){position:absolute;inset:0;width:100%;height:100%}
   .carousel-slide :global(img){object-fit:cover;object-position:center;user-select:none;-webkit-user-drag:none}
   .carousel-slide.is-center{z-index:2;--slide-scale:1;--slide-opacity:1;--slide-rotate:0deg;--slide-filter:none;cursor:pointer}
@@ -319,8 +317,8 @@ const responsiveSizes = (ratio: number, side = false) => {
   .is-center .slide-caption{opacity:1}
   .carousel-controls[hidden]{display:none}
   .carousel-arrow{position:absolute;z-index:5;top:50%;display:grid;width:3rem;height:3rem;place-items:center;padding:0;border:1px solid rgb(255 255 255 / .55);border-radius:50%;background:rgb(250 250 252 / .76);color:#202124;box-shadow:0 4px 18px rgb(0 0 0 / .14),inset 0 1px rgb(255 255 255 / .72);transform:translateY(-50%);cursor:pointer;-webkit-backdrop-filter:blur(20px) saturate(155%);backdrop-filter:blur(20px) saturate(155%);transition:background-color .22s ease,border-color .22s ease,scale .3s cubic-bezier(.22,1,.36,1),box-shadow .22s ease}
-  .carousel-arrow.previous{left:calc(50% - var(--active-half-width,30%) - 3rem)}
-  .carousel-arrow.next{right:calc(50% - var(--active-half-width,30%) - 3rem)}
+  .carousel-arrow.previous{left:max(.25rem,calc(50% - var(--active-half-width,30%) - 3rem))}
+  .carousel-arrow.next{right:max(.25rem,calc(50% - var(--active-half-width,30%) - 3rem))}
   .carousel-arrow svg{width:1.25rem;height:1.25rem;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
   .carousel-arrow:hover{background:rgb(255 255 255 / .96);border-color:rgb(255 255 255 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .18),inset 0 1px #fff;scale:1.055}
   .carousel-arrow:active{scale:.93}
@@ -328,10 +326,10 @@ const responsiveSizes = (ratio: number, side = false) => {
   .carousel-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
   @media(max-width:620px){
     .carousel-stage{--carousel-stage-height:clamp(12rem,min(56vw,52dvh),26rem)}
-    .carousel-slide{border-radius:.48rem}
+    .carousel-slide{border-radius:.48rem;box-shadow:0 6px 16px rgb(0 0 0 / .14)}
     .carousel-arrow{width:2.75rem;height:2.75rem}
-    .carousel-arrow.previous{left:calc(50% - var(--active-half-width,30%) - 2.75rem)}
-    .carousel-arrow.next{right:calc(50% - var(--active-half-width,30%) - 2.75rem)}
+    .carousel-arrow.previous{left:max(.25rem,calc(50% - var(--active-half-width,30%) - 2.75rem))}
+    .carousel-arrow.next{right:max(.25rem,calc(50% - var(--active-half-width,30%) - 2.75rem))}
     .slide-caption{padding:1rem;font-size:1.05rem}
   }
   @media(prefers-reduced-transparency:reduce){.carousel-arrow{background:rgb(255 255 255 / .96);-webkit-backdrop-filter:none;backdrop-filter:none}}

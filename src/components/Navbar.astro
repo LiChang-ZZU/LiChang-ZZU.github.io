@@ -85,10 +85,10 @@ const links = site.navigation.map((item) => {
 </script>
 <style>
   .site-header{position:fixed;z-index:100;inset:0 0 auto;pointer-events:none}
-  .nav-bar{--glass-fill:color-mix(in srgb,var(--color-bg) 87%,transparent);position:relative;z-index:2;width:100%;border:0;border-bottom:1px solid transparent;background-image:none;box-shadow:none;pointer-events:auto;transition:border-color .2s ease}
-  .site-header.is-scrolled .nav-bar{border-bottom-color:var(--color-line)}
+  .nav-bar{--glass-fill:color-mix(in srgb,var(--color-surface) 56%,transparent);--glass-blur:20px;position:relative;z-index:2;width:min(calc(100% - 1.5rem),65rem);margin:.6rem auto 0;border:1px solid var(--glass-rim);border-radius:var(--radius-pill);background-image:linear-gradient(165deg,var(--glass-sheen),transparent 62%);box-shadow:inset 0 1px 0 var(--glass-rim),var(--glass-shadow);pointer-events:auto;transition:background-color .25s ease,border-color .25s ease,box-shadow .25s ease}
+  .site-header.is-scrolled .nav-bar{--glass-fill:color-mix(in srgb,var(--color-surface) 76%,transparent);border-color:color-mix(in srgb,var(--glass-rim) 60%,var(--color-line));box-shadow:inset 0 1px 0 var(--glass-rim),0 14px 40px -16px rgb(10 16 24 / .45)}
   .nav,.mobile-menu{width:min(calc(100% - 2rem),65rem);margin-inline:auto}
-  .nav{--control-fill:color-mix(in srgb,var(--color-text) 7%,transparent);position:relative;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.45rem;height:var(--nav-height)}
+  .nav{--control-fill:color-mix(in srgb,var(--color-text) 7%,transparent);position:relative;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.45rem;width:100%;height:var(--nav-height);padding-inline:clamp(.55rem,1.4vw,.95rem)}
   .brand{justify-self:start;padding-inline:.5rem;font-size:.94rem;font-weight:680;letter-spacing:-.02em;white-space:nowrap}
   .desktop-links,.nav-tools{display:flex;align-items:center;gap:.15rem}
   .desktop-links a{position:relative;padding-inline:clamp(.65rem,1.3vw,1.1rem);color:color-mix(in srgb,var(--color-text) 78%,var(--color-muted));font-size:.9rem;white-space:nowrap}
@@ -104,13 +104,13 @@ const links = site.navigation.map((item) => {
   .menu-toggle[aria-expanded="true"] span:last-child{transform:rotate(-45deg)}
   .menu-scrim,.mobile-menu{display:none}
   @media(max-width:760px){
-    .nav{width:calc(100% - 1.25rem)}
-    .nav{grid-template-columns:minmax(0,1fr) auto;gap:.25rem}
+    .nav-bar{--glass-blur:16px;width:calc(100% - 1.25rem);margin-top:.5rem}
+    .nav{width:100%;padding-inline:.45rem;grid-template-columns:minmax(0,1fr) auto;gap:.25rem}
     .desktop-links{display:none}
     .menu-toggle{display:inline-grid;place-items:center}
     .menu-scrim,.mobile-menu{display:block;visibility:hidden;opacity:0;transition:opacity .26s ease,visibility .26s}
-    .menu-scrim{position:fixed;inset:0;background:rgb(9 14 16 / .22)}
-    .mobile-menu{--glass-fill:color-mix(in srgb,var(--color-surface) 94%,transparent);position:absolute;z-index:1;inset:var(--nav-height) 0 auto;width:100%;max-height:calc(100dvh - var(--nav-height));padding:.75rem clamp(1rem,6vw,3rem) 1.3rem;overflow:auto;overscroll-behavior:contain;border:0;border-bottom:1px solid var(--color-line);translate:0 -.55rem;transition:opacity .26s ease,translate .36s var(--ease-out),visibility .36s}
+    .menu-scrim{position:fixed;inset:0;background:rgb(9 14 16 / .26);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+    .mobile-menu{--glass-fill:color-mix(in srgb,var(--color-surface) 86%,transparent);--glass-blur:24px;position:absolute;z-index:1;inset:calc(var(--nav-height) + 1rem) .625rem auto;width:auto;max-height:calc(100dvh - var(--nav-height) - 2rem);padding:.75rem clamp(1rem,6vw,3rem) 1.3rem;overflow:auto;overscroll-behavior:contain;border:1px solid var(--glass-rim);border-radius:1.35rem;background-image:linear-gradient(165deg,var(--glass-sheen),transparent 55%);box-shadow:inset 0 1px 0 var(--glass-rim),var(--glass-shadow);translate:0 -.55rem;transition:opacity .26s ease,translate .36s var(--ease-out),visibility .36s}
     .is-menu-open .menu-scrim,.is-menu-open .mobile-menu{visibility:visible;opacity:1;pointer-events:auto}
     .is-menu-open .mobile-menu{translate:0 0}
     .is-leaving .mobile-menu,.is-leaving .menu-scrim{visibility:hidden;transition:none}
@@ -120,4 +120,5 @@ const links = site.navigation.map((item) => {
     @keyframes menu-in{from{opacity:0;translate:0 -.35rem}}
   }
   @media(max-width:360px){.brand{padding-inline:.5rem}.nav-tools{gap:0}}
+  @media(prefers-reduced-transparency:reduce){.menu-scrim{-webkit-backdrop-filter:none;backdrop-filter:none}}
 </style>
