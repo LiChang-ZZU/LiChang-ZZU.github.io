@@ -8,137 +8,276 @@ interface Props { locale: Locale; photos: Awaited<ReturnType<typeof getPhotos>> 
 const { locale, photos } = Astro.props;
 const zh = locale === 'zh';
 const href = getLocalizedPath(locale, '/interests/');
-const slides = photos.map(({ data }) => ({
-  image: photoImage(data.image, data.maxSize, data.compress),
-  ...photoText(data, locale),
-}));
+const slides = photos.map(({ data }) => {
+  const image = photoImage(data.image, data.maxSize, data.compress);
+  return { image, ratio: image.width && image.height ? image.width / image.height : 1.5, ...photoText(data, locale) };
+});
+const initialSlots = slides.length > 1 ? [
+  { slide: slides.at(-1)!, index: slides.length - 1, position: 'left' },
+  { slide: slides[0]!, index: 0, position: 'center' },
+  { slide: slides[1]!, index: 1, position: 'right' },
+] : slides.length ? [{ slide: slides[0]!, index: 0, position: 'center' }] : [];
+const responsiveSizes = (ratio: number, side = false) => {
+  const factor = side ? .72 : 1;
+  const mobile = Math.min(76, Math.ceil(ratio * 56 * factor));
+  const tablet = Math.min(76, Math.ceil(ratio * 58 * factor));
+  const desktop = Math.min(1200, Math.ceil(ratio * 608 * factor));
+  return `(max-width: 620px) ${mobile}vw, (max-width: 1240px) ${tablet}vw, ${desktop}px`;
+};
 ---
-<section class="photo-carousel" data-carousel aria-label={zh ? '摄影作品轮播' : 'Photography slideshow'}
-  data-pause={zh ? '暂停轮播' : 'Pause slideshow'} data-play={zh ? '播放轮播' : 'Play slideshow'}>
-  <div class="carousel-stage">
-    {slides.map(({ image, title, alt }, index) => {
-      const Wrapper = index === 0 ? 'div' : 'template';
-      const portrait = image.height > image.width;
-      const sizes = portrait ? '(max-width: 620px) 46vw, (max-width: 1240px) 27vw, 330px'
-        : '(max-width: 1240px) 92vw, 1152px';
-      return <Wrapper data-slide={index}>
-        <a class:list={['carousel-slide', { 'is-active': index === 0, 'is-portrait': portrait }]} href={href}>
-          <ResponsivePhoto {image} {alt} {sizes} />
-          <span class="slide-caption">{title}</span>
-        </a>
-      </Wrapper>;
+<section class="photo-carousel" data-carousel aria-label={zh ? '摄影作品轮播' : 'Photography slideshow'}>
+  <div class="carousel-stage" data-carousel-stage>
+    {slides.map(({ image, ratio, title, alt }, index) => <template data-slide={index}>
+      <a class="carousel-slide" data-carousel-slide data-index={index} style={`--photo-ratio:${ratio}`} href={href} aria-label={alt}>
+        <ResponsivePhoto {image} {alt} sizes={responsiveSizes(ratio, true)} />
+        <span class="slide-caption">{title}</span>
+      </a>
+    </template>)}
+    {initialSlots.map(({ slide, index, position }) => {
+      const { image, ratio, title, alt } = slide;
+      const active = position === 'center';
+      return <a class:list={['carousel-slide', `is-${position}`]} data-carousel-slide data-index={index}
+        style={`--photo-ratio:${ratio}`} href={href} aria-label={alt} aria-hidden={!active ? 'true' : undefined}
+        inert={!active}>
+        <ResponsivePhoto {image} {alt} sizes={responsiveSizes(ratio, !active)} />
+        <span class="slide-caption">{title}</span>
+      </a>;
     })}
-  {slides.length > 1 && <div class="carousel-controls" data-carousel-controls hidden>
-    <span class="carousel-count" aria-hidden="true"><span data-carousel-current>01</span><span class="carousel-count-divider">/</span>{String(slides.length).padStart(2, '0')}</span>
-    <span class="carousel-control-divider" aria-hidden="true"></span>
-    <button class="carousel-button" type="button" data-carousel-step="-1" aria-label={zh ? '上一张' : 'Previous photo'}>
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 3.75-6.25 6.25 6.25 6.25" /></svg>
-    </button>
-    <button class="carousel-button carousel-play" type="button" data-carousel-play aria-label={zh ? '暂停轮播' : 'Pause slideshow'}>
-      <svg class="pause-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4.5v11M13 4.5v11" /></svg>
-      <svg class="play-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="m7.25 4.5 9 5.5-9 5.5z" /></svg>
-    </button>
-    <button class="carousel-button" type="button" data-carousel-step="1" aria-label={zh ? '下一张' : 'Next photo'}>
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 3.75 6.25 6.25-6.25 6.25" /></svg>
-    </button>
+    {slides.length > 1 && <div class="carousel-controls" data-carousel-controls hidden>
+      <button class="carousel-arrow previous" type="button" data-carousel-step="-1" aria-label={zh ? '上一张照片' : 'Previous photo'}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.75 5.5-6.5 6.5 6.5 6.5" /></svg>
+      </button>
+      <button class="carousel-arrow next" type="button" data-carousel-step="1" aria-label={zh ? '下一张照片' : 'Next photo'}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.25 5.5 6.5 6.5-6.5 6.5" /></svg>
+      </button>
+    </div>}
     <span class="carousel-status" aria-live="polite"></span>
-  </div>}
   </div>
 </section>
 <script>
   for (const root of document.querySelectorAll<HTMLElement>('[data-carousel]')) {
-    const templates = [...root.querySelectorAll<HTMLTemplateElement>('template[data-slide]')];
+    const stage = root.querySelector<HTMLElement>('[data-carousel-stage]')!;
     const controls = root.querySelector<HTMLElement>('[data-carousel-controls]');
-    if (!templates.length || !controls) continue;
+    const status = root.querySelector<HTMLElement>('.carousel-status')!;
+    if (!controls) continue;
 
-    const stage = root.querySelector<HTMLElement>('.carousel-stage')!;
-    const currentLabel = controls.querySelector<HTMLElement>('[data-carousel-current]')!;
-    const status = controls.querySelector<HTMLElement>('.carousel-status')!;
-    const play = controls.querySelector<HTMLButtonElement>('[data-carousel-play]')!;
-    const slideTitles = [
-      stage.querySelector('.slide-caption')?.textContent?.trim() ?? '',
-      ...templates.map((template) => template.content.querySelector('.slide-caption')?.textContent?.trim() ?? ''),
-    ];
+    const templates = new Map([...root.querySelectorAll<HTMLTemplateElement>('template[data-slide]')]
+      .map((template) => [Number(template.dataset.slide), template]));
+    const slideCount = templates.size;
+    let left = stage.querySelector<HTMLAnchorElement>('.is-left');
+    let center = stage.querySelector<HTMLAnchorElement>('.is-center');
+    let right = stage.querySelector<HTMLAnchorElement>('.is-right');
+    if (slideCount < 2 || !center || !left || !right) continue;
+
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     const hover = matchMedia('(hover: hover)');
-    let active = stage.querySelector<HTMLAnchorElement>('.is-active')!;
-    const first = active.cloneNode(true) as HTMLAnchorElement;
+    const sideScale = .72;
+    const duration = 760;
+    let current = Number(center.dataset.index);
     let visible = false;
-    let playing = !motion.matches;
     let hovered = false;
     let focused = false;
-    let current = 0;
-    let desired = 0;
-    let revision = 0;
+    let autoplay = !motion.matches;
     let timer: number | undefined;
-    let pending: HTMLAnchorElement | undefined;
+    let queuedSteps = 0;
+    let announceQueuedMove = false;
+    let transitioning = false;
+
+    function imageSize(ratio: number, side: boolean) {
+      const factor = side ? sideScale : 1;
+      const mobile = Math.min(76, Math.ceil(ratio * 56 * factor));
+      const tablet = Math.min(76, Math.ceil(ratio * 58 * factor));
+      const desktop = Math.min(1200, Math.ceil(ratio * 608 * factor));
+      return `(max-width: 620px) ${mobile}vw, (max-width: 1240px) ${tablet}vw, ${desktop}px`;
+    }
+
+    function promote(slide: HTMLAnchorElement) {
+      const image = slide.querySelector('img');
+      const ratio = Number.parseFloat(slide.style.getPropertyValue('--photo-ratio')) || 1.5;
+      if (image) {
+        image.loading = 'eager';
+        image.sizes = imageSize(ratio, false);
+      }
+      return image?.decode().catch(() => undefined) ?? Promise.resolve();
+    }
+
+    function setRole(slide: HTMLAnchorElement, role: 'left' | 'center' | 'right') {
+      slide.classList.remove('is-left', 'is-center', 'is-right', 'is-entering-left', 'is-entering-right', 'is-leaving');
+      slide.classList.add(`is-${role}`);
+      slide.inert = role !== 'center';
+      if (role === 'center') slide.removeAttribute('aria-hidden');
+      else slide.setAttribute('aria-hidden', 'true');
+      if (role === 'center') void promote(slide);
+    }
+
+    function placeSlides() {
+      if (!center || !left || !right) return;
+      for (const slide of [left, center, right]) {
+        const ratio = Number.parseFloat(slide.style.getPropertyValue('--photo-ratio')) || 1.5;
+        const width = Math.min(stage.clientHeight * ratio, stage.clientWidth * .76);
+        slide.style.width = `${width}px`;
+        slide.style.height = `${width / ratio}px`;
+      }
+      const centerWidth = center.offsetWidth;
+      if (!centerWidth) return;
+      const gap = Math.max(14, Math.min(38, stage.clientWidth * .03));
+      left.style.setProperty('--slide-x', `${-(centerWidth / 2 + left.offsetWidth * sideScale / 2 + gap)}px`);
+      center.style.setProperty('--slide-x', '0px');
+      right.style.setProperty('--slide-x', `${centerWidth / 2 + right.offsetWidth * sideScale / 2 + gap}px`);
+      stage.style.setProperty('--active-half-width', `${centerWidth / 2}px`);
+    }
+
+    function createSlide(index: number, role: 'left' | 'right') {
+      const template = templates.get(index);
+      const slide = template?.content.firstElementChild?.cloneNode(true) as HTMLAnchorElement | undefined;
+      if (!slide) return undefined;
+      slide.classList.add(`is-entering-${role}`);
+      slide.dataset.index = String(index);
+      slide.inert = true;
+      slide.setAttribute('aria-hidden', 'true');
+      const image = slide.querySelector('img');
+      const ratio = Number.parseFloat(slide.style.getPropertyValue('--photo-ratio')) || 1.5;
+      if (image) {
+        image.loading = 'eager';
+        image.sizes = imageSize(ratio, true);
+      }
+      return { slide, image };
+    }
 
     function schedule() {
-      clearTimeout(timer);
-      if (playing && !hovered && !focused && visible && !document.hidden) {
-        timer = window.setTimeout(() => void show(desired + 1, false), 5500);
+      window.clearTimeout(timer);
+      if (autoplay && !hovered && !focused && visible && !document.hidden && !transitioning && queuedSteps === 0) {
+        timer = window.setTimeout(() => requestMove(1, false), 5700);
       }
     }
 
-    async function show(next: number, announce: boolean) {
-      clearTimeout(timer);
-      const count = templates.length + 1;
-      desired = (next + count) % count;
-      const index = desired;
-      const request = ++revision;
-      pending?.remove();
-      pending = undefined;
-      if (index === current) { schedule(); return; }
+    async function moveOne(direction: -1 | 1, announce: boolean) {
+      if (!left || !center || !right) return;
+      const oldLeft = left;
+      const oldCenter = center;
+      const oldRight = right;
+      const promoted = direction > 0 ? oldRight : oldLeft;
+      const incomingIndex = (Number(promoted.dataset.index) + direction + slideCount) % slideCount;
+      const incomingRole = direction > 0 ? 'right' : 'left';
+      const incoming = createSlide(incomingIndex, incomingRole);
+      if (!incoming) return;
 
-      const template = templates[index - 1];
-      const slide = index === 0 ? first.cloneNode(true) as HTMLAnchorElement
-        : template?.content.firstElementChild?.cloneNode(true) as HTMLAnchorElement | undefined;
-      if (!slide) { schedule(); return; }
-      pending = slide;
-      slide.classList.remove('is-active');
-      slide.inert = true;
-      stage.append(slide);
-      const image = slide.querySelector('img')!;
-      image.loading = 'eager';
-      try {
-        await image.decode();
-      } catch {
-        slide.remove();
-        if (request === revision) schedule();
-        return;
+      placeSlides();
+      stage.append(incoming.slide);
+      const incomingRatio = Number.parseFloat(incoming.slide.style.getPropertyValue('--photo-ratio')) || 1.5;
+      const incomingWidth = Math.min(stage.clientHeight * incomingRatio, stage.clientWidth * .76);
+      incoming.slide.style.width = `${incomingWidth}px`;
+      incoming.slide.style.height = `${incomingWidth / incomingRatio}px`;
+      const incomingImageReady = incoming.image?.decode().catch(() => undefined) ?? Promise.resolve();
+      const promotedImageReady = promote(promoted);
+      await Promise.all([incomingImageReady, promotedImageReady]);
+
+      const outgoing = direction > 0 ? oldLeft : oldRight;
+      const centerWidth = oldCenter.offsetWidth;
+      const gap = Math.max(14, Math.min(38, stage.clientWidth * .03));
+      outgoing.style.setProperty('--slide-x', `${-direction * (centerWidth / 2 + outgoing.offsetWidth + gap * 2)}px`);
+      const outerWidth = direction > 0 ? oldRight.offsetWidth : oldLeft.offsetWidth;
+      const enteringX = direction * (centerWidth / 2 + outerWidth * sideScale + incoming.slide.offsetWidth * .28 + gap * 2);
+      incoming.slide.style.setProperty('--slide-x', `${enteringX}px`);
+      void incoming.slide.offsetWidth;
+
+      await new Promise<void>((resolve) => requestAnimationFrame(() => {
+        outgoing.classList.remove('is-left', 'is-right', 'is-center');
+        outgoing.classList.add('is-leaving');
+        outgoing.inert = true;
+        outgoing.setAttribute('aria-hidden', 'true');
+        if (direction > 0) {
+          left = oldCenter;
+          center = oldRight;
+          right = incoming.slide;
+          setRole(left, 'left');
+          setRole(center, 'center');
+          setRole(right, 'right');
+        } else {
+          right = oldCenter;
+          center = oldLeft;
+          left = incoming.slide;
+          setRole(left, 'left');
+          setRole(center, 'center');
+          setRole(right, 'right');
+        }
+        placeSlides();
+        resolve();
+      }));
+
+      current = Number(center.dataset.index);
+      await new Promise<void>((resolve) => window.setTimeout(resolve, motion.matches ? 0 : duration));
+      outgoing.remove();
+      if (announce) status.textContent = templates.get(current)?.content.querySelector('.slide-caption')?.textContent?.trim() ?? '';
+    }
+
+    async function drainQueue() {
+      if (transitioning) return;
+      transitioning = true;
+      window.clearTimeout(timer);
+      while (queuedSteps !== 0) {
+        const direction: -1 | 1 = queuedSteps > 0 ? 1 : -1;
+        queuedSteps -= direction;
+        await moveOne(direction, announceQueuedMove);
       }
-      if (request !== revision) { slide.remove(); return; }
-      pending = undefined;
-      const previous = active;
-      previous.inert = true;
-      previous.classList.remove('is-active');
-      slide.inert = false;
-      // Give cached slides the same fade as images arriving from the network.
-      void slide.offsetWidth;
-      slide.classList.add('is-active');
-      active = slide;
-      current = index;
-      window.setTimeout(() => previous.remove(), motion.matches ? 0 : 650);
-      currentLabel.textContent = String(index + 1).padStart(2, '0');
-      if (announce) status.textContent = slideTitles[index] ?? '';
+      transitioning = false;
+      announceQueuedMove = false;
       schedule();
     }
 
-    const setPlaying = (value: boolean) => {
-      playing = value;
-      play.classList.toggle('is-playing', playing);
-      play.setAttribute('aria-label', (playing ? root.dataset.pause : root.dataset.play) ?? '');
-      schedule();
-    };
+    function requestMove(direction: -1 | 1, announce: boolean) {
+      queuedSteps += direction;
+      announceQueuedMove ||= announce;
+      window.clearTimeout(timer);
+      void drainQueue();
+    }
 
     controls.hidden = false;
-    setPlaying(playing);
-    play.addEventListener('click', () => {
-      setPlaying(!playing);
-      if (playing) focused = false;
-      schedule();
+    for (const slide of [left, center, right]) {
+      const image = slide.querySelector('img');
+      const ratio = Number.parseFloat(slide.style.getPropertyValue('--photo-ratio')) || 1.5;
+      if (image && !slide.classList.contains('is-center')) image.sizes = imageSize(ratio, true);
+    }
+    placeSlides();
+    controls.addEventListener('click', (event) => {
+      if (!(event.target instanceof Element)) return;
+      const step = event.target.closest<HTMLButtonElement>('[data-carousel-step]')?.dataset.carouselStep;
+      if (step === '-1' || step === '1') requestMove(Number(step) as -1 | 1, true);
     });
-    motion.addEventListener('change', () => setPlaying(!motion.matches));
+    stage.addEventListener('click', (event) => {
+      if (!(event.target instanceof Element)) return;
+      const slide = event.target.closest<HTMLAnchorElement>('.carousel-slide');
+      if (!slide || slide.classList.contains('is-center')) return;
+      event.preventDefault();
+      requestMove(slide.classList.contains('is-left') ? -1 : 1, true);
+    });
+    root.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      requestMove(event.key === 'ArrowLeft' ? -1 : 1, true);
+    });
+
+    let startX = 0;
+    let startY = 0;
+    let dragging = false;
+    stage.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (event.target instanceof Element && event.target.closest('button')) { dragging = false; return; }
+      startX = event.clientX;
+      startY = event.clientY;
+      dragging = true;
+    }, { passive: true });
+    stage.addEventListener('pointerup', (event) => {
+      if (!dragging) return;
+      dragging = false;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (Math.abs(dx) < 44 || Math.abs(dx) < Math.abs(dy) * 1.35) return;
+      event.preventDefault();
+      requestMove(dx < 0 ? 1 : -1, true);
+    });
+
+    motion.addEventListener('change', () => { autoplay = !motion.matches; schedule(); });
     document.addEventListener('visibilitychange', schedule);
     root.addEventListener('pointerenter', () => { if (hover.matches) { hovered = true; schedule(); } });
     root.addEventListener('pointerleave', () => { hovered = false; schedule(); });
@@ -148,48 +287,50 @@ const slides = photos.map(({ data }) => ({
       focused = false;
       schedule();
     });
-    controls.addEventListener('click', (event) => {
-      if (!(event.target instanceof Element)) return;
-      const { carouselStep } = event.target.closest<HTMLElement>('[data-carousel-step]')?.dataset ?? {};
-      if (carouselStep) void show(desired + Number(carouselStep), true);
-    });
-    root.addEventListener('keydown', (event) => {
-      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-      event.preventDefault();
-      void show(desired + (event.key === 'ArrowLeft' ? -1 : 1), true);
-    });
+    if (typeof ResizeObserver !== 'undefined') {
+      const resizeObserver = new ResizeObserver(() => requestAnimationFrame(placeSlides));
+      resizeObserver.observe(stage);
+    } else window.addEventListener('resize', () => requestAnimationFrame(placeSlides), { passive: true });
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver(([entry]) => {
         visible = Boolean(entry?.isIntersecting && entry.intersectionRatio >= .35);
         schedule();
       }, { threshold: .35 });
       observer.observe(stage);
-    }
+    } else { visible = true; schedule(); }
   }
 </script>
 <style>
-  .carousel-stage{position:relative;isolation:isolate;overflow:hidden;aspect-ratio:2.2;border-radius:1.25rem;background:#101112}
-  .carousel-slide{position:absolute;inset:0;z-index:0;display:grid;align-items:end;opacity:0;color:#fff;overflow:hidden;text-decoration:none;transition:opacity .62s var(--ease-out)}
-  .carousel-slide.is-active{z-index:1;opacity:1}
-  .carousel-slide:focus-visible{outline-offset:-5px;border-radius:1.25rem}
-  .carousel-slide :global(img){position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 54%;z-index:-2}
-  .carousel-slide.is-portrait{background:#131718}
-  .carousel-slide.is-portrait :global(img){object-fit:contain}
-  .carousel-slide::after{content:"";position:absolute;inset:52% 0 0;background:linear-gradient(0deg,rgb(0 0 0 / .45),transparent);z-index:-1;pointer-events:none}
-  .slide-caption{max-width:min(72%,42rem);padding:clamp(1.15rem,3.4vw,2.5rem);font-size:clamp(1.15rem,2.2vw,1.7rem);font-weight:560;line-height:1.25;letter-spacing:-.025em;text-shadow:0 1px 16px rgb(0 0 0 / .18)}
-  .carousel-controls{position:absolute;z-index:3;right:clamp(.75rem,2.2vw,1.5rem);bottom:clamp(.75rem,2.2vw,1.5rem);display:flex;align-items:center;gap:.16rem;padding:.28rem .42rem .28rem .82rem;border:1px solid rgb(255 255 255 / .21);border-radius:999px;background:rgb(25 27 29 / .56);color:#fff;box-shadow:0 8px 30px rgb(0 0 0 / .16),inset 0 1px rgb(255 255 255 / .1);-webkit-backdrop-filter:blur(24px) saturate(150%);backdrop-filter:blur(24px) saturate(150%)}
+  .carousel-stage{--carousel-stage-height:clamp(14rem,min(58vw,62dvh),38rem);position:relative;isolation:isolate;overflow:hidden;width:100%;height:var(--carousel-stage-height);perspective:1200px;touch-action:pan-y;background:transparent}
+  .carousel-slide{position:absolute;top:50%;left:50%;display:block;width:min(76vw,38rem);height:auto;max-width:76vw;max-height:var(--carousel-stage-height);aspect-ratio:var(--photo-ratio);overflow:hidden;border-radius:.68rem;color:#fff;text-decoration:none;transform:translate(calc(-50% + var(--slide-x,0px)),-50%) rotateY(var(--slide-rotate,0deg)) scale(var(--slide-scale,1));transform-style:preserve-3d;backface-visibility:hidden;opacity:var(--slide-opacity,1);filter:var(--slide-filter,none);box-shadow:0 16px 42px rgb(0 0 0 / .12);transition:transform .76s cubic-bezier(.22,1,.36,1),opacity .65s ease,filter .65s ease}
+  .carousel-slide :global(picture),.carousel-slide :global(img){position:absolute;inset:0;width:100%;height:100%}
+  .carousel-slide :global(img){object-fit:cover;object-position:center;user-select:none;-webkit-user-drag:none}
+  .carousel-slide.is-center{z-index:2;--slide-scale:1;--slide-opacity:1;--slide-rotate:0deg;--slide-filter:none;cursor:pointer}
+  .carousel-slide.is-left,.carousel-slide.is-right{z-index:1;--slide-scale:.72;--slide-opacity:.56;--slide-filter:saturate(.78) brightness(.84)}
+  .carousel-slide.is-left{--slide-rotate:5deg}
+  .carousel-slide.is-right{--slide-rotate:-5deg}
+  .carousel-slide.is-entering-left,.carousel-slide.is-entering-right{z-index:0;--slide-scale:.55;--slide-opacity:0;pointer-events:none}
+  .carousel-slide.is-leaving{z-index:0;--slide-scale:.58;--slide-opacity:0;pointer-events:none}
+  .carousel-slide:focus-visible{z-index:3;outline:3px solid var(--color-accent);outline-offset:4px}
+  .slide-caption{position:absolute;z-index:2;right:0;bottom:0;left:0;margin:0;padding:clamp(1rem,2.6vw,1.9rem);background:linear-gradient(0deg,rgb(0 0 0 / .48),rgb(0 0 0 / .13) 68%,transparent);font-size:clamp(1.1rem,2vw,1.6rem);font-weight:560;line-height:1.25;letter-spacing:-.02em;text-shadow:0 1px 14px rgb(0 0 0 / .2);opacity:0;transition:opacity .34s ease;pointer-events:none}
+  .is-center .slide-caption{opacity:1}
   .carousel-controls[hidden]{display:none}
-  .carousel-count{display:flex;align-items:center;gap:.32rem;min-width:3.2rem;color:rgb(255 255 255 / .91);font-size:.72rem;font-variant-numeric:tabular-nums;letter-spacing:.035em}
-  .carousel-count-divider{color:rgb(255 255 255 / .44)}
-  .carousel-control-divider{width:1px;height:1.15rem;margin-inline:.35rem .2rem;background:rgb(255 255 255 / .23)}
-  .carousel-button{display:grid;place-items:center;width:2.55rem;height:2.55rem;padding:0;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;transition:background-color .2s ease,scale .28s var(--ease-out),color .2s ease}
-  .carousel-button svg{width:1.05rem;height:1.05rem;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
-  .carousel-button .play-icon{display:none}
-  .carousel-button:not(.is-playing) .play-icon{display:block}
-  .carousel-button:not(.is-playing) .pause-icon{display:none}
-  .carousel-button:hover{background:rgb(255 255 255 / .14)}
-  .carousel-button:active{scale:.91}
-  .carousel-button:focus-visible{outline:2px solid #fff;outline-offset:1px}
-  @media(max-width:620px){.carousel-stage{aspect-ratio:1.25;border-radius:1rem}.slide-caption{max-width:58%;padding:1rem;font-size:1.05rem}.carousel-controls{right:.65rem;bottom:.65rem;padding:.2rem .3rem .2rem .65rem;gap:.02rem}.carousel-button{width:2.25rem;height:2.25rem}.carousel-control-divider{margin-inline:.15rem}.carousel-count{min-width:2.9rem;font-size:.68rem}}
-  @media(prefers-reduced-transparency:reduce){.carousel-controls{background:rgb(20 22 24 / .92);-webkit-backdrop-filter:none;backdrop-filter:none}}
+  .carousel-arrow{position:absolute;z-index:5;top:50%;display:grid;width:3rem;height:3rem;place-items:center;padding:0;border:1px solid rgb(255 255 255 / .55);border-radius:50%;background:rgb(250 250 252 / .76);color:#202124;box-shadow:0 4px 18px rgb(0 0 0 / .14),inset 0 1px rgb(255 255 255 / .72);transform:translateY(-50%);cursor:pointer;-webkit-backdrop-filter:blur(20px) saturate(155%);backdrop-filter:blur(20px) saturate(155%);transition:background-color .22s ease,border-color .22s ease,scale .3s cubic-bezier(.22,1,.36,1),box-shadow .22s ease}
+  .carousel-arrow.previous{left:calc(50% - var(--active-half-width,30%) - 3rem)}
+  .carousel-arrow.next{right:calc(50% - var(--active-half-width,30%) - 3rem)}
+  .carousel-arrow svg{width:1.25rem;height:1.25rem;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+  .carousel-arrow:hover{background:rgb(255 255 255 / .96);border-color:rgb(255 255 255 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .18),inset 0 1px #fff;scale:1.055}
+  .carousel-arrow:active{scale:.93}
+  .carousel-arrow:focus-visible{outline:2px solid var(--color-accent);outline-offset:3px}
+  .carousel-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  @media(max-width:620px){
+    .carousel-stage{--carousel-stage-height:clamp(12rem,min(56vw,52dvh),26rem)}
+    .carousel-slide{border-radius:.48rem}
+    .carousel-arrow{width:2.75rem;height:2.75rem}
+    .carousel-arrow.previous{left:calc(50% - var(--active-half-width,30%) - 2.75rem)}
+    .carousel-arrow.next{right:calc(50% - var(--active-half-width,30%) - 2.75rem)}
+    .slide-caption{padding:1rem;font-size:1.05rem}
+  }
+  @media(prefers-reduced-transparency:reduce){.carousel-arrow{background:rgb(255 255 255 / .96);-webkit-backdrop-filter:none;backdrop-filter:none}}
+  @media(prefers-reduced-motion:reduce){.carousel-slide{transition:none}}
 </style>
