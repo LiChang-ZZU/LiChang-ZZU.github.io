@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#173d48"/><path d="M18 44 29 17h7l11 27h-7l-2-6H27l-2 6zm11-12h7l-3.5-9z" fill="#f7f7f5"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">LC — Kyle Lee</title>
+  <rect width="64" height="64" rx="15" fill="#173d48" />
+  <path d="M17 16v32h17" fill="none" stroke="#f7f7f5" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M49 21c-2.7-3.2-6.5-5-10.5-5-9.3 0-14.5 6.2-14.5 16s5.2 16 14.5 16c4 0 7.8-1.8 10.5-5" fill="none" stroke="#f7f7f5" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
